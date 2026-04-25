@@ -18,6 +18,21 @@ const execFileAsync = promisify(execFile);
 
 const ONCHAINOS_BIN = process.env.ONCHAINOS_BIN || "onchainos";
 
+// Chain name to chain index mapping
+const CHAIN_MAP: Record<string, string> = {
+  ethereum: "1",
+  sepolia: "11155111",
+  base: "8453",
+  bsc: "56",
+  arbitrum: "42161",
+  solana: "501",
+  xlayer: "196",
+};
+
+function getChainIndex(chain: string): string {
+  return CHAIN_MAP[chain.toLowerCase()] || chain;
+}
+
 function parseJson<T>(stdout: string): T {
   // OnchainOS may output JSON mixed with status lines; extract the JSON block
   const lines = stdout.trim().split("\n");
@@ -48,10 +63,11 @@ export async function getTotalValue(
   address: string,
   chains: string[]
 ): Promise<PortfolioTotalValue> {
+  const chainIndexes = chains.map(getChainIndex).join(",");
   return run<PortfolioTotalValue>([
     "portfolio", "total-value",
     "--address", address,
-    "--chains", chains.join(","),
+    "--chains", chainIndexes,
   ]);
 }
 
@@ -59,10 +75,11 @@ export async function getAllBalances(
   address: string,
   chains: string[]
 ): Promise<PortfolioBalances> {
+  const chainIndexes = chains.map(getChainIndex).join(",");
   return run<PortfolioBalances>([
     "portfolio", "all-balances",
     "--address", address,
-    "--chains", chains.join(","),
+    "--chains", chainIndexes,
   ]);
 }
 
@@ -72,21 +89,35 @@ export async function getPortfolioOverview(
   address: string,
   chain: string
 ): Promise<PnLOverview> {
+  const chainIndex = getChainIndex(chain);
+  // Check if chain is supported for PnL
+  const supportedChains = await getPortfolioSupportedChains();
+  if (!supportedChains.includes(chainIndex)) {
+    return { address, totalPnlUsd: 0, winRate: 0, tradeCount: 0, avgHoldingTime: "0", bestTrade: { token: "", pnlUsd: 0 }, worstTrade: { token: "", pnlUsd: 0 } };
+  }
   return run<PnLOverview>([
     "market", "portfolio-overview",
     "--address", address,
-    "--chain", chain,
+    "--chain", chainIndex,
+    "--time-frame", "4", // 1M (default)
   ]);
 }
 
 export async function getTokenPnL(
   address: string,
-  chain: string
+  chain: string,
+  token?: string
 ): Promise<TokenPnL[]> {
+  const chainIndex = getChainIndex(chain);
+  const supportedChains = await getPortfolioSupportedChains();
+  if (!supportedChains.includes(chainIndex) || !token) {
+    return [];
+  }
   return run<TokenPnL[]>([
     "market", "portfolio-token-pnl",
     "--address", address,
-    "--chain", chain,
+    "--chain", chainIndex,
+    "--token", token,
   ]);
 }
 
@@ -96,14 +127,24 @@ export async function getDexHistory(
   beginMs?: number,
   endMs?: number
 ): Promise<DexTrade[]> {
+  const chainIndex = getChainIndex(chain);
+  const supportedChains = await getPortfolioSupportedChains();
+  if (!supportedChains.includes(chainIndex) || !beginMs || !endMs) {
+    return [];
+  }
   const args = [
     "market", "portfolio-dex-history",
     "--address", address,
-    "--chain", chain,
+    "--chain", chainIndex,
+    "--begin", String(beginMs),
+    "--end", String(endMs),
   ];
-  if (beginMs) args.push("--begin", String(beginMs));
-  if (endMs) args.push("--end", String(endMs));
   return run<DexTrade[]>(args);
+}
+
+export async function getPortfolioSupportedChains(): Promise<string[]> {
+  const result = await run<{ data: { chainIndex: string }[] }>(["market", "portfolio-supported-chains"]);
+  return result.data.map(chain => chain.chainIndex);
 }
 
 // --- Signal ---

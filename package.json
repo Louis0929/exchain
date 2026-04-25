@@ -18,8 +18,18 @@
     "blockchain",
     "onchainos",
     "breakup",
-    "defi"
+    "defi",
+    "agent",
+    "okx"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/exchain"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/exchain/issues"
+  },
+  "homepage": "https://github.com/yourusername/exchain",
   "author": "",
   "license": "MIT",
   "devDependencies": {

@@ -1,0 +1,13 @@
+name: exchain
+description: "ExChain — Breakup on-chain calculator & relationship lock"
+version: "0.1.0"
+author: "Louis Yeung"
+skills:
+  - okx-wallet-portfolio
+  - okx-dex-market
+  - okx-dex-signal
+  - okx-onchain-gateway
+  - okx-agentic-wallet
+  - okx-security
+  - okx-defi-invest
+  - okx-defi-portfolio

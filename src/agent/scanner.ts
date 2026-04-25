@@ -20,8 +20,20 @@ const DEFAULT_CHAINS = ["sepolia", "ethereum", "base", "bsc", "arbitrum"];
 export async function scanWallet(
   address: string,
   chains: string[] = DEFAULT_CHAINS,
-  primaryChain = "sepolia"
+  primaryChain = "sepolia",
+  beginDate?: string,
+  endDate?: string
 ): Promise<ScanResult> {
+  let beginMs: number | undefined;
+  let endMs: number | undefined;
+
+  if (beginDate) {
+    beginMs = new Date(beginDate).getTime();
+  }
+  if (endDate) {
+    endMs = new Date(endDate).getTime();
+  }
+
   const [totalValue, balances, pnlOverview, tokenPnL, tradeHistory] =
     await Promise.all([
       oc.getTotalValue(address, chains).catch((e) => {
@@ -40,7 +52,7 @@ export async function scanWallet(
         console.warn(`token-pnl failed: ${e.message}`);
         return [];
       }),
-      oc.getDexHistory(address, primaryChain).catch((e) => {
+      oc.getDexHistory(address, primaryChain, beginMs, endMs).catch((e) => {
         console.warn(`dex-history failed: ${e.message}`);
         return [];
       }),

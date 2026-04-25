@@ -99,7 +99,7 @@ async function runScan(args: string[]) {
   console.log("");
 
   // Run scan
-  const scanResult = await scanWallet(address, chainList);
+  const scanResult = await scanWallet(address, chainList, "sepolia", relationshipStart, relationshipEnd);
 
   // Score
   const scores = scoreWallet(scanResult);
