@@ -35,7 +35,7 @@ export function classifyInvestmentStyle(scanResult: ScanResult): InvestmentTag[]
   const { tokenPnL, pnlOverview, balances } = scanResult;
 
   // Check holdings for style classification
-  const allTokens = balances.chains.flatMap((c) => c.tokens);
+  const allTokens = (balances?.chains || []).flatMap((c) => c?.tokens || []);
   const hasNft = false; // Would need NFT-specific API
   const memeTokens = allTokens.filter((t) =>
     /doge|pepe|shib|floki|wojak|bonk|meme/i.test(t.symbol)

@@ -15,7 +15,7 @@ export function formatScanReport(report: BreakupReport): string {
   lines.push("║  │                                                     │  ║");
   lines.push(`║  │    💰 鏈上資產        📊 交易勝率      🏷️ 人設標籤   │  ║`);
   lines.push("║  │                                                     │  ║");
-  lines.push(`║  │    $${report.walletData.totalAssetsUsd.toLocaleString().padEnd(12)} ${(Math.round(report.walletData.winRate * 100) + "%").padEnd(14)} ${report.scores.investmentTags.map((t) => INVESTMENT_TAG_LABELS[t]).join(" ").padEnd(14)}│  ║`);
+  lines.push(`║  │    $${(report.walletData.totalAssetsUsd || 0).toLocaleString().padEnd(12)} ${(Math.round(report.walletData.winRate * 100) + "%").padEnd(14)} ${report.scores.investmentTags.map((t) => INVESTMENT_TAG_LABELS[t]).join(" ").padEnd(14)}│  ║`);
   lines.push("║  │                                                     │  ║");
   lines.push("║  └─────────────────────────────────────────────────────┘  ║");
   lines.push("║                                                           ║");

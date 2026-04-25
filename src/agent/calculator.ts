@@ -43,12 +43,12 @@ export function calculateCompensation(params: CompensationParams): CompensationR
       {
         label: "基礎補償",
         amount: Math.round(baseCompensation * 100) / 100,
-        detail: `前任總資產 $${totalAssetsUsd.toLocaleString()} × ${(baseRate * 100).toFixed(0)}%`,
+        detail: `前任總資產 $${(totalAssetsUsd || 0).toLocaleString()} × ${(baseRate * 100).toFixed(0)}%`,
       },
       {
         label: "關係期間收益分成",
         amount: Math.round(profitShare * 100) / 100,
-        detail: `已實現盈虧 $${realizedPnlUsd.toLocaleString()} × ${(profitShareRate * 100).toFixed(0)}%`,
+        detail: `已實現盈虧 $${(realizedPnlUsd || 0).toLocaleString()} × ${(profitShareRate * 100).toFixed(0)}%`,
       },
       {
         label: "精神損失費",
