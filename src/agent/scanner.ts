@@ -15,12 +15,12 @@ export interface ScanResult {
   tradeHistory: DexTrade[];
 }
 
-const DEFAULT_CHAINS = ["sepolia", "ethereum", "base", "bsc", "arbitrum"];
+const DEFAULT_CHAINS = ["ethereum", "base", "bsc", "arbitrum"];
 
 export async function scanWallet(
   address: string,
   chains: string[] = DEFAULT_CHAINS,
-  primaryChain = "sepolia",
+  primaryChain = "ethereum",
   beginDate?: string,
   endDate?: string
 ): Promise<ScanResult> {
@@ -48,10 +48,14 @@ export async function scanWallet(
         console.warn(`portfolio-overview failed: ${e.message}`);
         return { address, totalPnlUsd: 0, winRate: 0, tradeCount: 0, avgHoldingTime: "0", bestTrade: { token: "", pnlUsd: 0 }, worstTrade: { token: "", pnlUsd: 0 } };
       }),
-      oc.getTokenPnL(address, primaryChain).catch((e) => {
-        console.warn(`token-pnl failed: ${e.message}`);
-        return [];
-      }),
+      (async () => {
+        try {
+          return await oc.getTokenPnL(address, primaryChain);
+        } catch (e) {
+          console.warn(`token-pnl failed: ${e.message}`);
+          return [];
+        }
+      })(),
       oc.getDexHistory(address, primaryChain, beginMs, endMs).catch((e) => {
         console.warn(`dex-history failed: ${e.message}`);
         return [];

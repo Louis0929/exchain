@@ -1,5 +1,7 @@
-import { execFile } from "node:child_process";
+import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import os from "node:os";
+import path from "node:path";
 import type {
   PortfolioTotalValue,
   PortfolioBalances,
@@ -14,9 +16,23 @@ import type {
   WalletStatus,
 } from "../types/onchainos.js";
 
-const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 
-const ONCHAINOS_BIN = process.env.ONCHAINOS_BIN || "onchainos";
+// Determine onchainos executable path based on OS
+let ONCHAINOS_BIN = process.env.ONCHAINOS_BIN;
+if (!ONCHAINOS_BIN) {
+  const homedir = os.homedir();
+  if (os.platform() === "win32") {
+    ONCHAINOS_BIN = path.join(homedir, ".local", "bin", "onchainos.exe");
+  } else if (os.platform() === "darwin") {
+    ONCHAINOS_BIN = path.join(homedir, ".local", "bin", "onchainos");
+  } else if (os.platform() === "linux") {
+    ONCHAINOS_BIN = path.join(homedir, ".local", "bin", "onchainos");
+  } else {
+    ONCHAINOS_BIN = "onchainos"; // fallback
+  }
+}
+console.log("ONCHAINOS_BIN:", ONCHAINOS_BIN);
 
 // Chain name to chain index mapping
 const CHAIN_MAP: Record<string, string> = {
@@ -34,18 +50,49 @@ function getChainIndex(chain: string): string {
 }
 
 function parseJson<T>(stdout: string): T {
-  // OnchainOS may output JSON mixed with status lines; extract the JSON block
-  const lines = stdout.trim().split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim().startsWith("{") || lines[i].trim().startsWith("[")) {
-      return JSON.parse(lines.slice(i).join("\n")) as T;
+  // OnchainOS may output JSON mixed with status lines; extract the first complete JSON block
+  const trimmed = stdout.trim();
+  const startIndex = Math.min(
+    trimmed.indexOf("{") !== -1 ? trimmed.indexOf("{") : Infinity,
+    trimmed.indexOf("[") !== -1 ? trimmed.indexOf("[") : Infinity
+  );
+  if (startIndex === Infinity) {
+    throw new Error(`No JSON found in onchainos output: ${trimmed.slice(0, 200)}`);
+  }
+
+  let depth = 0;
+  let endIndex = startIndex;
+  const startChar = trimmed[startIndex];
+  const endChar = startChar === "{" ? "}" : "]";
+
+  for (let i = startIndex; i < trimmed.length; i++) {
+    if (trimmed[i] === startChar) {
+      depth++;
+    } else if (trimmed[i] === endChar) {
+      depth--;
+      if (depth === 0) {
+        endIndex = i + 1;
+        break;
+      }
     }
   }
-  throw new Error(`No JSON found in onchainos output: ${stdout.slice(0, 200)}`);
+
+  if (depth > 0) {
+    throw new Error(`Incomplete JSON found in onchainos output: ${trimmed.slice(startIndex, startIndex + 200)}`);
+  }
+
+  const jsonStr = trimmed.slice(startIndex, endIndex);
+  try {
+    return JSON.parse(jsonStr) as T;
+  } catch (parseErr: any) {
+    throw new Error(`Failed to parse JSON: ${parseErr.message}\nContent: ${jsonStr.slice(0, 200)}`);
+  }
 }
 
 async function run<T>(args: string[]): Promise<T> {
-  const { stdout, stderr } = await execFileAsync(ONCHAINOS_BIN, args, {
+  const cmd = `"${ONCHAINOS_BIN}" ${args.join(" ")}`;
+  console.log("Executing command:", cmd);
+  const { stdout, stderr } = await execAsync(cmd, {
     timeout: 30_000,
     maxBuffer: 1024 * 1024,
   });
@@ -109,16 +156,24 @@ export async function getTokenPnL(
   token?: string
 ): Promise<TokenPnL[]> {
   const chainIndex = getChainIndex(chain);
-  const supportedChains = await getPortfolioSupportedChains();
-  if (!supportedChains.includes(chainIndex) || !token) {
+  if (!token) {
+    return []; // Return empty array if no token is provided, not an error
+  }
+  try {
+    const supportedChains = await getPortfolioSupportedChains();
+    if (!supportedChains.includes(chainIndex)) {
+      return [];
+    }
+    return run<TokenPnL[]>([
+      "market", "portfolio-token-pnl",
+      "--address", address,
+      "--chain", chainIndex,
+      "--token", token,
+    ]);
+  } catch (err) {
+    console.warn(`getTokenPnL failed: ${(err as Error).message}`);
     return [];
   }
-  return run<TokenPnL[]>([
-    "market", "portfolio-token-pnl",
-    "--address", address,
-    "--chain", chainIndex,
-    "--token", token,
-  ]);
 }
 
 export async function getDexHistory(
@@ -127,6 +182,7 @@ export async function getDexHistory(
   beginMs?: number,
   endMs?: number
 ): Promise<DexTrade[]> {
+  console.log("getDexHistory params:", { address, chain, beginMs, endMs });
   const chainIndex = getChainIndex(chain);
   const supportedChains = await getPortfolioSupportedChains();
   if (!supportedChains.includes(chainIndex) || !beginMs || !endMs) {
