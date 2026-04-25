@@ -10,3 +10,14 @@ Started: 2025-04-25
 - OKX API supports 20+ chains; default to ethereum for MVP demo
 - Whale address for demo: 0x28C6c06298d31479934E3D29e2AA5bf86cA32e17 (Binance hot wallet, lots of data)
 ---
+
+## 2026-04-25 - US-001 to US-005
+- Verified US-001 through US-005 all meet acceptance criteria
+- Added scanner.test.ts: mocked OnchainOS tests for scanWallet (happy path + error fallbacks)
+- Added classifyInvestmentStyle tests: whale, shrimp, meme_player, defi_farmer, paper_hands, diamond_hands, trend_trader
+- Added getSmartMoneyRank async function + tests (okx-dex-signal leaderboard)
+- All 38 tests pass, typecheck clean
+- **Learnings for future iterations:**
+  - scoring.ts `hasNft` is hardcoded false — needs NFT API integration later
+  - `getSmartMoneyRank` is async but `scoreWallet` is sync — may need refactoring if smart money rank is needed in the main flow
+---

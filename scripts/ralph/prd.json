@@ -15,7 +15,7 @@
         "Package.json with all dependencies"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": "Foundation — all other stories depend on this"
     },
     {
@@ -31,7 +31,7 @@
         "Unit tests with mocked OnchainOS responses"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Core data layer for the scanner"
     },
     {
@@ -47,7 +47,7 @@
         "Unit tests covering edge cases: zero balance, all stablecoins, only meme coins"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "This is what makes ExChain fun and viral"
     },
     {
@@ -64,7 +64,7 @@
         "Unit tests with known inputs/outputs"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "Pure calculation, no OnchainOS calls needed here"
     },
     {
@@ -80,7 +80,7 @@
         "Self-scan detection → easter egg message"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "LLM-generated roast is optional; template-based roast is sufficient for MVP"
     },
     {

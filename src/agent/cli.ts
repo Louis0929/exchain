@@ -3,8 +3,10 @@ import { scanWallet, type ScanResult } from "./scanner.js";
 import { scoreWallet } from "./scoring.js";
 import { calculateCompensation } from "./calculator.js";
 import { generateRoast, generateCaseNumber } from "./roast.js";
+import { deployLockContract, depositUSDC } from "./deployer.js";
 import { formatScanReport } from "../reports/format.js";
-import type { BreakupReport, CompensationParams } from "../types/exchain.js";
+import type { BreakupReport, CompensationParams, LockParams } from "../types/exchain.js";
+import { getWalletStatus } from "../utils/onchainos.js";
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -148,12 +150,77 @@ async function runScan(args: string[]) {
 }
 
 async function runLock(args: string[]) {
+  const parsed = parseLockArgs(args);
+  if (!parsed) return;
+
+  // Check wallet login
   console.log("⛓️ ExChain Lock — 鏈上關係誓約書");
   console.log("");
-  console.log("⚠️ ExChain Lock 功能需要錢包登入和合約部署。");
-  console.log("請使用 onchainos wallet login 登入後再操作。");
+
+  const walletStatus = await getWalletStatus().catch(() => ({ loggedIn: false }));
+  if (!walletStatus.loggedIn) {
+    console.log("⚠️ 請先登入錢包：onchainos wallet login <email>");
+    console.log("");
+  }
+
+  const lockParams: LockParams = {
+    partyA: (walletStatus as any).address || "0x0000000000000000000000000000000000000000",
+    partyB: "0x0000000000000000000000000000000000000000", // Will be filled by partner
+    amountA: parsed.amount,
+    amountB: parsed.amount,
+    durationMonths: parsed.duration,
+    template: parsed.template,
+  };
+
+  console.log("設定確認：");
+  console.log(`  ├─ 你: ${parsed.amount} USDC`);
+  console.log(`  ├─ 鎖定期: ${parsed.duration} 個月`);
+  console.log(`  ├─ 模板: ${parsed.template}`);
+  console.log(`  └─ 對方需存入: ${parsed.amount} USDC（等額）`);
   console.log("");
-  console.log("用法：exchain lock --amount <USDC> --duration <months> --template <peace|negotiate|punish|custom>");
+
+  if (walletStatus.loggedIn) {
+    try {
+      const contractState = await deployLockContract(lockParams);
+      console.log("");
+      console.log(`🎉 ExChain Lock 合約已部署！`);
+      console.log(`   合約地址: ${contractState.address}`);
+      console.log(`   到期日: ${new Date(contractState.deadline * 1000).toISOString().split("T")[0]}`);
+      console.log("");
+      console.log(`   請讓你的伴侶連接錢包確認 ✍️`);
+      console.log(`   [等待對方確認...]`);
+    } catch (err: any) {
+      console.error(`❌ 部署失敗: ${err.message}`);
+    }
+  } else {
+    console.log("用法：exchain lock --amount <USDC> --duration <months> --template <peace|negotiate|punish|custom>");
+  }
+}
+
+function parseLockArgs(args: string[]): { amount: number; duration: number; template: "peace" | "negotiate" | "punish" | "custom" } | null {
+  let amount = 0;
+  let duration = 12;
+  let template: "peace" | "negotiate" | "punish" | "custom" = "peace";
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--amount" && args[i + 1]) {
+      amount = parseFloat(args[++i]);
+    } else if (args[i] === "--duration" && args[i + 1]) {
+      duration = parseInt(args[++i], 10);
+    } else if (args[i] === "--template" && args[i + 1]) {
+      const t = args[++i];
+      if (["peace", "negotiate", "punish", "custom"].includes(t)) {
+        template = t as any;
+      }
+    }
+  }
+
+  if (!amount) {
+    console.error("Error: --amount is required (e.g., --amount 1000)");
+    return null;
+  }
+
+  return { amount, duration, template };
 }
 
 function maskAddress(addr: string): string {

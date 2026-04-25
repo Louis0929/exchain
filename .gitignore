@@ -1,0 +1,13 @@
+node_modules/
+**/*.js
+**/*.d.ts
+dist/
+contracts/
+onchainos-skills/
+.claude/
+*.log
+dist/
+contracts/cache/
+contracts/artifacts/
+contracts/typechain-types/
+contracts/ignition/deployments/
