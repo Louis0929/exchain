@@ -15,12 +15,12 @@ export interface ScanResult {
   tradeHistory: DexTrade[];
 }
 
-const DEFAULT_CHAINS = ["ethereum", "base", "bsc", "arbitrum"];
+const DEFAULT_CHAINS = ["sepolia", "ethereum", "base", "bsc", "arbitrum"];
 
 export async function scanWallet(
   address: string,
   chains: string[] = DEFAULT_CHAINS,
-  primaryChain = "ethereum"
+  primaryChain = "sepolia"
 ): Promise<ScanResult> {
   const [totalValue, balances, pnlOverview, tokenPnL, tradeHistory] =
     await Promise.all([

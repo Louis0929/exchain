@@ -181,7 +181,7 @@ async function runLock(args: string[]) {
 
   if (walletStatus.loggedIn) {
     try {
-      const contractState = await deployLockContract(lockParams);
+      const contractState = await deployLockContract(lockParams, "sepolia");
       console.log("");
       console.log(`🎉 ExChain Lock 合約已部署！`);
       console.log(`   合約地址: ${contractState.address}`);

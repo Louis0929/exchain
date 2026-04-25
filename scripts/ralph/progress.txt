@@ -7,7 +7,7 @@ Started: 2025-04-25
 - Use USDC (ERC20) for ExChain Lock deposits, NOT native ETH
 - Solidity: use `call` not `transfer`, always include ReentrancyGuard
 - OnchainOS commands return JSON — parse with typed interfaces, never raw strings
-- OKX API supports 20+ chains; default to ethereum for MVP demo
+- OKX API supports 20+ chains; default to sepolia for testing
 - Whale address for demo: 0x28C6c06298d31479934E3D29e2AA5bf86cA32e17 (Binance hot wallet, lots of data)
 ---
 
@@ -53,3 +53,12 @@ Started: 2025-04-25
   - Upgrade mechanic (bronze→silver→gold→diamond) not yet implemented
   - Token URI should point to on-chain metadata (IPFS or Arweave) instead of centralized URL
 ---
+
+## 2026-04-25 - Sepolia support
+- Updated default chain from ethereum to sepolia for testing
+- Deployer, scanner, and CLI now default to Sepolia network
+- Added Sepolia to default chains for scan command
+- All 76 tests pass
+- **Learnings for future iterations:**
+  - OnchainOS CLI not installed on current system — user needs to install it for testing on Sepolia
+  - Need to verify that Sepolia chain is available in OnchainOS API

@@ -37,7 +37,7 @@ function encodeConstructorArgs(params: LockParams): string {
 
 export async function deployLockContract(
   params: LockParams,
-  chain = "ethereum"
+  chain = "sepolia"
 ): Promise<LockContractState> {
   const { bytecode } = getContractArtifact();
   const splitRatio = params.template === "custom" && params.customSplitRatio
@@ -119,7 +119,7 @@ export async function deployLockContract(
 export async function depositUSDC(
   contractAddress: string,
   amount: number,
-  chain = "ethereum"
+  chain = "sepolia"
 ): Promise<void> {
   console.log(`💰 Depositing ${amount} USDC to ${contractAddress}...`);
 
