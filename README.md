@@ -22,7 +22,7 @@ ExChain is a blockchain-based breakup calculator and on-chain relationship lock 
 
 2. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/exchain.git
+   git clone https://github.com/Louis0929/exchain.git
    cd exchain
    ```
 
