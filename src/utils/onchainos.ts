@@ -132,11 +132,18 @@ export async function getTotalValue(
   chains: string[]
 ): Promise<PortfolioTotalValue> {
   const chainIndexes = chains.map(getChainIndex).join(",");
-  return run<PortfolioTotalValue>([
+  const result = await run<{ ok: boolean; data: { totalValue: string }[] }>([
     "portfolio", "total-value",
     "--address", address,
     "--chains", chainIndexes,
   ]);
+  // Parse the API response to match our type
+  const totalUsd = result.data.length > 0 ? parseFloat(result.data[0].totalValue) : 0;
+  const chainsObj: Record<string, number> = {};
+  chains.forEach(chain => {
+    chainsObj[chain] = totalUsd / chains.length; // Approximate per chain
+  });
+  return { totalUsd, chains: chainsObj };
 }
 
 export async function getAllBalances(
@@ -163,12 +170,22 @@ export async function getPortfolioOverview(
   if (!supportedChains.includes(chainIndex)) {
     return { address, totalPnlUsd: 0, winRate: 0, tradeCount: 0, avgHoldingTime: "0", bestTrade: { token: "", pnlUsd: 0 }, worstTrade: { token: "", pnlUsd: 0 } };
   }
-  return run<PnLOverview>([
+  const result = await run<{ ok: boolean; data: any }>([
     "market", "portfolio-overview",
     "--address", address,
     "--chain", chainIndex,
     "--time-frame", "4", // 1M (default)
   ]);
+  // Parse the API response to match our type
+  return {
+    address,
+    totalPnlUsd: parseFloat(result.data.realizedPnlUsd) || 0,
+    winRate: parseFloat(result.data.winRate) || 0,
+    tradeCount: parseInt(result.data.buyTxCount) + parseInt(result.data.sellTxCount) || 0,
+    avgHoldingTime: "0", // API doesn't provide this for now
+    bestTrade: { token: "", pnlUsd: 0 }, // API doesn't provide this for now
+    worstTrade: { token: "", pnlUsd: 0 }, // API doesn't provide this for now
+  };
 }
 
 export async function getTokenPnL(
