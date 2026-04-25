@@ -1,0 +1,18 @@
+## Codebase Patterns
+
+- **OnchainOS Integration**: The project uses OnchainOS CLI commands to interact with blockchain data. The CLI commands are wrapped in async functions in src/utils/onchainos.ts.
+- **Smart Contract**: The ExChainLock smart contract is implemented in Solidity and uses OpenZeppelin libraries for security (ReentrancyGuard, SafeERC20).
+- **Testing**: The project uses Vitest for TypeScript testing and Hardhat for Solidity testing.
+- **CLI**: The CLI is implemented in src/agent/cli.ts and supports scan and lock commands.
+
+## [2026-04-25] - US-008
+
+- Implemented end-to-end interactive flow for ExChain Lock
+- Updated CLI to handle lock command with wallet login check
+- Added deployer.ts to handle contract deployment
+- Files changed: src/agent/cli.ts, src/agent/deployer.ts
+- **Learnings for future iterations**:
+  - OnchainOS wallet login requires email and verification code
+  - Contract deployment via OnchainOS requires bytecode and ABI
+  - Gas estimation and transaction simulation are important for user experience
+---
