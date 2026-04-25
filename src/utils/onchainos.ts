@@ -2,6 +2,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import os from "node:os";
 import path from "node:path";
+import fs from "node:fs";
 import type {
   PortfolioTotalValue,
   PortfolioBalances,
@@ -22,15 +23,35 @@ const execAsync = promisify(exec);
 let ONCHAINOS_BIN = process.env.ONCHAINOS_BIN;
 if (!ONCHAINOS_BIN) {
   const homedir = os.homedir();
+  let foundPath = "onchainos"; // Default to system PATH
+
   if (os.platform() === "win32") {
-    ONCHAINOS_BIN = path.join(homedir, ".local", "bin", "onchainos.exe");
-  } else if (os.platform() === "darwin") {
-    ONCHAINOS_BIN = path.join(homedir, ".local", "bin", "onchainos");
-  } else if (os.platform() === "linux") {
-    ONCHAINOS_BIN = path.join(homedir, ".local", "bin", "onchainos");
-  } else {
-    ONCHAINOS_BIN = "onchainos"; // fallback
+    const possiblePaths = [
+      path.join(homedir, ".local", "bin", "onchainos.exe"),
+      path.join(process.env.ProgramFiles || "", "onchainos", "onchainos.exe"),
+      path.join(process.env["ProgramFiles(x86)"] || "", "onchainos", "onchainos.exe"),
+    ];
+    for (const possiblePath of possiblePaths) {
+      if (fs.existsSync(possiblePath)) {
+        foundPath = possiblePath;
+        break;
+      }
+    }
+  } else if (os.platform() === "darwin" || os.platform() === "linux") {
+    const possiblePaths = [
+      path.join(homedir, ".local", "bin", "onchainos"),
+      "/usr/local/bin/onchainos",
+      "/usr/bin/onchainos",
+    ];
+    for (const possiblePath of possiblePaths) {
+      if (fs.existsSync(possiblePath)) {
+        foundPath = possiblePath;
+        break;
+      }
+    }
   }
+
+  ONCHAINOS_BIN = foundPath;
 }
 console.log("ONCHAINOS_BIN:", ONCHAINOS_BIN);
 
