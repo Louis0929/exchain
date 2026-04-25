@@ -21,3 +21,12 @@ Started: 2025-04-25
   - scoring.ts `hasNft` is hardcoded false — needs NFT API integration later
   - `getSmartMoneyRank` is async but `scoreWallet` is sync — may need refactoring if smart money rank is needed in the main flow
 ---
+
+## 2026-04-25 - US-006 to US-007
+- Verified US-006: ExChainLock smart contract is implemented with all required features (deposit, withdraw, breakup, renew, early exit, 24h timeout)
+- All 14 Solidity tests pass
+- Verified US-007: deployLockContract and depositUSDC functions are implemented using OnchainOS skills
+- **Learnings for future iterations:**
+  - deployer.ts uses placeholder contract address derivation from tx hash — in production, use tx receipt to get contract address
+  - depositUSDC uses wallet send instead of contract call — needs to be updated to call the contract's deposit function directly
+---

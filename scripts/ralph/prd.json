@@ -101,7 +101,7 @@
         "Tests cover: happy path deposit→withdraw, breakup distribution, single-deposit timeout, renew, early exit"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "Use USDC (ERC20), NOT ETH. Include ReentrancyGuard. Use call pattern not transfer."
     },
     {
@@ -117,7 +117,7 @@
         "Contract bytecode compilation integrated into build step"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Depends on US-006 contract being ready"
     },
     {
