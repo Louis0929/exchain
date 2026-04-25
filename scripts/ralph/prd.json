@@ -1,0 +1,171 @@
+{
+  "project": "ExChain",
+  "branchName": "ralph/exchain-hackathon",
+  "description": "ExChain — 分手鏈上計算器 & 鏈上關係鎖. Hackathon MVP: Ex-Scanner (wallet scan + breakup calculator + AI roast) + ExChain Lock (smart contract deployment + deposit + withdraw/breakup)",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Project scaffold & OnchainOS integration",
+      "description": "Set up the project structure with OnchainOS CLI integration. Create the agent entry point that can invoke onchainos commands.",
+      "acceptanceCriteria": [
+        "Project directory structure created: /contracts, /src/agent, /src/reports, /src/utils",
+        "OnchainOS CLI wrapper utility that can execute onchainos commands and parse JSON output",
+        "Basic config file with API endpoints and default chain settings",
+        "TypeScript setup with proper types for OnchainOS responses",
+        "Package.json with all dependencies"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": "Foundation — all other stories depend on this"
+    },
+    {
+      "id": "US-002",
+      "title": "Ex-Scanner: Wallet portfolio scanning",
+      "description": "Implement the Ex-Scanner module that takes a wallet address and returns complete financial overview using OnchainOS portfolio & market skills.",
+      "acceptanceCriteria": [
+        "Function: scanWallet(address, chains[]) that calls onchainos portfolio total-value and all-balances",
+        "Function: analyzePnL(address, chain) that calls onchainos market portfolio-overview and portfolio-token-pnl",
+        "Function: getTradeHistory(address, chain) that calls onchainos market portfolio-dex-history",
+        "All functions return typed interfaces, not raw JSON strings",
+        "Error handling for: empty wallets, API timeouts, invalid addresses",
+        "Unit tests with mocked OnchainOS responses"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "Core data layer for the scanner"
+    },
+    {
+      "id": "US-003",
+      "title": "Ex-Scanner: Scoring & tagging system",
+      "description": "Build the scoring engine that transforms raw wallet data into fun metrics: earning index, risk level, investment style tags, lie index.",
+      "acceptanceCriteria": [
+        "Function: calculateEarningIndex(walletData) → score 0-100 based on total assets + PnL",
+        "Function: classifyInvestmentStyle(holdings) → tags: 💎Diamond Hands / 🧻Paper Hands / 🐋Whale / 🦐Shrimp / 🌾DeFi Farmer / 🐶Meme Player / 🎨NFT Collector / 📈Trend Trader",
+        "Function: calculateLieIndex(totalAssets, claimedBroke) → percentage 0-100",
+        "Function: getSmartMoneyRank(address) using okx-dex-signal leaderboard",
+        "All scoring logic is pure functions, easily testable",
+        "Unit tests covering edge cases: zero balance, all stablecoins, only meme coins"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "This is what makes ExChain fun and viral"
+    },
+    {
+      "id": "US-004",
+      "title": "Breakup Calculator: Compensation engine",
+      "description": "Implement the breakup compensation calculator with configurable parameters: baseRate, profitShareRate, emotionalMultiplier.",
+      "acceptanceCriteria": [
+        "Function: calculateCompensation(params) → { baseComp, profitShare, emotionalDamages, total, breakdown }",
+        "Base compensation = ex total assets × baseRate (default 5%)",
+        "Profit share = realized PnL during relationship × profitShareRate (default 10%)",
+        "Emotional multiplier: winRate > 70% → ×1.5, < 30% → ×0.5, else ×1.0",
+        "Relationship period filtering using relationshipStart date",
+        "Support for custom rate adjustments (1%-20% base, 0%-50% profit share)",
+        "Unit tests with known inputs/outputs"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Pure calculation, no OnchainOS calls needed here"
+    },
+    {
+      "id": "US-005",
+      "title": "AI Roast: Report & speech generator",
+      "description": "Generate the 'AI Judge Speech' roast commentary and format the complete breakup compensation report for display.",
+      "acceptanceCriteria": [
+        "Function: generateRoast(walletData, compensationResult) → roast text string",
+        "Roast templates based on: high win rate, losses, meme-only portfolio, stablecoin-only portfolio, zero activity",
+        "Function: formatReport(walletData, scores, compensation, roast) → structured report object",
+        "Report includes: WANTED poster data, compensation notice data, share card data",
+        "Edge case handling: $0 compensation → '窮到連補償金都算不出' with instant noodle icon",
+        "Self-scan detection → easter egg message"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "LLM-generated roast is optional; template-based roast is sufficient for MVP"
+    },
+    {
+      "id": "US-006",
+      "title": "ExChain Lock: Smart contract — ExChainLock.sol",
+      "description": "Write and test the ExChainLock Solidity smart contract that handles dual-party USDC deposits, time-locked commitments, and breakup distribution.",
+      "acceptanceCriteria": [
+        "Contract: ExChainLock with partyA, partyB, amountA, amountB, deadline, splitRatio",
+        "deposit() — each party deposits USDC (ERC20, not ETH)",
+        "renew(newDeadline) — requires both parties' signatures (2/2 multisig)",
+        "withdraw() — after deadline, each party gets back their deposit (default splitRatio 10000)",
+        "breakup() — distributes total pool by splitRatio (basis points)",
+        "24-hour timeout: if only one party deposits, auto-refund after 24 hours",
+        "Emergency: both parties can co-sign to early-exit before deadline",
+        "ReentrancyGuard on all external call functions",
+        "Use SafeERC20 for USDC transfers (not raw transfer)",
+        "Hardhat setup with compilation and basic test suite",
+        "Tests cover: happy path deposit→withdraw, breakup distribution, single-deposit timeout, renew, early exit"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "Use USDC (ERC20), NOT ETH. Include ReentrancyGuard. Use call pattern not transfer."
+    },
+    {
+      "id": "US-007",
+      "title": "ExChain Lock: Contract deployment via OnchainOS",
+      "description": "Build the agent module that deploys ExChainLock contract and handles deposit flows using OnchainOS wallet & gateway skills.",
+      "acceptanceCriteria": [
+        "Function: deployLockContract(params) using okx-agentic-wallet contract-call",
+        "Function: depositUSDC(contractAddr, amount) using okx-agentic-wallet send",
+        "Pre-deployment flow: estimate-gas → simulate-tx → security tx-scan → broadcast-tx",
+        "Status tracking: poll broadcast-tx until confirmed",
+        "Error handling: deployment failure, gas estimation failure, security scan warnings",
+        "Contract bytecode compilation integrated into build step"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Depends on US-006 contract being ready"
+    },
+    {
+      "id": "US-008",
+      "title": "Agent CLI: End-to-end interactive flow",
+      "description": "Create the main agent entry point that ties everything together into an interactive CLI flow matching the PRD user stories (Flow A: scan + calculate + roast, Flow B: create lock).",
+      "acceptanceCriteria": [
+        "CLI command: exchain scan <address> --from <date> --to <date> runs full Flow A",
+        "CLI command: exchain lock --amount <USDC> --duration <months> --template <peace|negotiate|punish|custom> runs Flow B",
+        "Scan flow: wallet scan → scoring → compensation calc → roast → formatted output",
+        "Lock flow: parameter setup → contract deploy → party A deposit → wait for party B → confirmation",
+        "Progress indicators during API calls (not silent waiting)",
+        "Edge cases handled: invalid address, empty wallet, API errors, self-scan easter egg"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "This is the demo-ready integration story"
+    },
+    {
+      "id": "US-009",
+      "title": "Relationship Certificate NFT contract",
+      "description": "Create a simple ERC721 contract that mints a 'Relationship Certificate' NFT when ExChain Lock is activated. NFT includes both parties' addresses, lock amount, and deadline.",
+      "acceptanceCriteria": [
+        "ERC721 contract: ExChainCertificate with tokenURI pointing to on-chain metadata",
+        "Auto-mint on Lock activation (called by ExChainLock contract)",
+        "Metadata: partyA, partyB, totalLocked, deadline, createdAt",
+        "Upgrade mechanic placeholder: renewal updates token level (bronze→silver→gold→diamond)",
+        "Basic Hardhat tests for mint and metadata"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "P1 for hackathon — nice-to-have, skip if time is tight"
+    },
+    {
+      "id": "US-010",
+      "title": "Share card image generation",
+      "description": "Generate shareable breakup report images (1200×675) for social media using HTML/CSS template rendered to image.",
+      "acceptanceCriteria": [
+        "HTML template for 'WANTED' poster and 'Compensation Notice' share cards",
+        "Dynamic content injection: wallet data, scores, compensation, roast",
+        "Output: PNG image file at standard social media ratio (1200×675)",
+        "Background color gradient based on compensation amount: $0 gray → $1K pink → $5K red → $10K+ gold",
+        "Address masking: show first 6 + last 4 chars only",
+        "ExChain branding: logo + slogan at bottom of every card"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "P2 for hackathon — if time allows, this drives viral sharing"
+    }
+  ]
+}

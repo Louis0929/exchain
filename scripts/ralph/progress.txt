@@ -1,0 +1,12 @@
+# Ralph Progress Log
+Started: 2025-04-25
+---
+
+## Codebase Patterns
+- OnchainOS CLI is the agent backbone; all blockchain interactions go through it
+- Use USDC (ERC20) for ExChain Lock deposits, NOT native ETH
+- Solidity: use `call` not `transfer`, always include ReentrancyGuard
+- OnchainOS commands return JSON — parse with typed interfaces, never raw strings
+- OKX API supports 20+ chains; default to ethereum for MVP demo
+- Whale address for demo: 0x28C6c06298d31479934E3D29e2AA5bf86cA32e17 (Binance hot wallet, lots of data)
+---
