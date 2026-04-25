@@ -133,7 +133,7 @@
         "Edge cases handled: invalid address, empty wallet, API errors, self-scan easter egg"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "This is the demo-ready integration story"
     },
     {

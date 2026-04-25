@@ -30,3 +30,13 @@ Started: 2025-04-25
   - deployer.ts uses placeholder contract address derivation from tx hash — in production, use tx receipt to get contract address
   - depositUSDC uses wallet send instead of contract call — needs to be updated to call the contract's deposit function directly
 ---
+
+## 2026-04-25 - US-008
+- Verified US-008: Agent CLI is implemented with scan and lock commands
+- scan command: runs wallet scan → scoring → compensation calculation → roast generation → formatted output
+- lock command: handles parameter setup, contract deployment, and deposit flow
+- Progress indicators and error handling are implemented
+- **Learnings for future iterations:**
+  - onchainos CLI not installed on current system (spawn onchainos ENOENT) — needs to be installed for full functionality
+  - self-scan detection is hardcoded false — needs to be implemented
+---
