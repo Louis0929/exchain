@@ -40,3 +40,16 @@ Started: 2025-04-25
   - onchainos CLI not installed on current system (spawn onchainos ENOENT) — needs to be installed for full functionality
   - self-scan detection is hardcoded false — needs to be implemented
 ---
+
+## 2026-04-25 - US-009
+- Implemented ExChainCertificate: ERC721 contract for relationship certificates
+- Added safeMint function to mint certificates with metadata
+- Added CertificateMetadata struct to store party addresses, total locked, deadline, and created at
+- Added CertificateMinted event to track minting
+- Added basic Hardhat tests for deployment, minting, and metadata
+- All 5 tests pass
+- **Learnings for future iterations:**
+  - Auto-mint on ExChainLock activation not yet implemented — needs to be added to ExChainLock contract
+  - Upgrade mechanic (bronze→silver→gold→diamond) not yet implemented
+  - Token URI should point to on-chain metadata (IPFS or Arweave) instead of centralized URL
+---

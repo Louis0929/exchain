@@ -1,12 +1,12 @@
 node_modules/
 **/*.js
+!contracts/test/*.js
 **/*.d.ts
+!contracts/test/*.d.ts
 dist/
-contracts/
 onchainos-skills/
 .claude/
 *.log
-dist/
 contracts/cache/
 contracts/artifacts/
 contracts/typechain-types/

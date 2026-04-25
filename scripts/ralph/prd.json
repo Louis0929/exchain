@@ -148,7 +148,7 @@
         "Basic Hardhat tests for mint and metadata"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "P1 for hackathon — nice-to-have, skip if time is tight"
     },
     {
