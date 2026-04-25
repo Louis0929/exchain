@@ -1,6 +1,7 @@
 import type { WalletScores, InvestmentTag, EarningScore } from "../types/exchain.js";
 import type { ScanResult } from "./scanner.js";
 import { INVESTMENT_TAG_LABELS } from "../types/exchain.js";
+import { getSmartMoneyLeaderboard } from "../utils/onchainos.js";
 
 export function calculateEarningIndex(totalAssetsUsd: number): EarningScore {
   if (totalAssetsUsd <= 0) {
@@ -93,6 +94,16 @@ export function calculateLieIndex(
   if (totalAssetsUsd >= 5_000) return 50;
   if (totalAssetsUsd >= 1_000) return 30;
   return 10;
+}
+
+export async function getSmartMoneyRank(address: string): Promise<number | null> {
+  try {
+    const leaderboard = await getSmartMoneyLeaderboard();
+    const entry = leaderboard.find((e) => e.address.toLowerCase() === address.toLowerCase());
+    return entry ? entry.rank : null;
+  } catch {
+    return null;
+  }
 }
 
 export function getActivityLevel(tradeCount: number): "gym_rat" | "chill" {
