@@ -4,6 +4,7 @@ import { scoreWallet } from "./scoring.js";
 import { calculateCompensation } from "./calculator.js";
 import { generateRoast, generateCaseNumber } from "./roast.js";
 import { deployLockContract, depositUSDC } from "./deployer.js";
+import { sendOnChainSummons, formatSummonsResult } from "./summons.js";
 import { formatScanReport } from "../reports/format.js";
 import type { BreakupReport, CompensationParams, LockParams } from "../types/exchain.js";
 import { getWalletStatus } from "../utils/onchainos.js";
@@ -19,6 +20,10 @@ async function main() {
 
   if (command === "scan") {
     await runScan(args.slice(1));
+  } else if (command === "summons") {
+    await runSummons(args.slice(1));
+  } else if (command === "refresh") {
+    await runRefresh(args.slice(1));
   } else if (command === "lock") {
     await runLock(args.slice(1));
   } else {
@@ -34,6 +39,8 @@ ExChain — 分手鏈上計算器 & 鏈上關係鎖
 
 Usage:
   exchain scan <address> [--from <date>] [--to <date>] [--chains <chains>]
+  exchain summons <address> [--case <caseNumber>] [--amount <usd>] [--chain <chain>]
+  exchain refresh <address> [--from <date>] [--to <date>] [--chains <chains>]
   exchain lock --amount <USDC> --duration <months> --template <peace|negotiate|punish|custom>
 
 Examples:
@@ -147,6 +154,114 @@ async function runScan(args: string[]) {
   };
 
   console.log(formatScanReport(report));
+}
+
+async function runSummons(args: string[]) {
+  let address = "";
+  let caseNumber = "";
+  let amount = 0;
+  let chain = "base";
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--case" && args[i + 1]) {
+      caseNumber = args[++i];
+    } else if (args[i] === "--amount" && args[i + 1]) {
+      amount = parseFloat(args[++i]);
+    } else if (args[i] === "--chain" && args[i + 1]) {
+      chain = args[++i];
+    } else if (!args[i].startsWith("--")) {
+      address = args[i];
+    }
+  }
+
+  if (!address) {
+    console.error("Error: wallet address is required");
+    return;
+  }
+
+  if (!caseNumber) {
+    caseNumber = generateCaseNumber();
+  }
+
+  console.log("📨 ExChain 鏈上存證 — On-chain Summons");
+  console.log("");
+
+  const walletStatus = await getWalletStatus().catch(() => ({ loggedIn: false }));
+  if (!walletStatus.loggedIn) {
+    console.log("⚠️ 請先登入錢包：onchainos wallet login <email>");
+    return;
+  }
+
+  if (amount <= 0) {
+    console.log("⚠️ 請提供補償金金額（--amount <USD>），或先運行 scan 獲取補償金");
+    console.log("   例如：exchain summons 0x1234... --amount 6227 --chain base");
+    return;
+  }
+
+  const result = await sendOnChainSummons({
+    exAddress: address,
+    compensationAmount: amount,
+    caseNumber,
+    chain,
+  });
+
+  console.log(formatSummonsResult(result));
+}
+
+async function runRefresh(args: string[]) {
+  const { address, from, to, chains } = parseScanArgs(args);
+  const relationshipStart = from || "2023-01-01";
+  const relationshipEnd = to || new Date().toISOString().split("T")[0];
+  const chainList = chains || ["ethereum", "base", "bsc", "arbitrum"];
+
+  console.log(`🔄 正在刷新鏈上數據... ${maskAddress(address)}`);
+  console.log(`📅 關係期間：${relationshipStart} → ${relationshipEnd}`);
+  console.log("");
+
+  const scanResult = await scanWallet(address, chainList, "ethereum", relationshipStart, relationshipEnd);
+  const scores = scoreWallet(scanResult);
+
+  const compParams: CompensationParams = {
+    exAddress: address,
+    totalAssetsUsd: scanResult.totalValue.totalUsd,
+    realizedPnlUsd: scanResult.pnlOverview.totalPnlUsd,
+    winRate: scanResult.pnlOverview.winRate,
+    relationshipStart,
+    relationshipEnd,
+    baseRate: 0.05,
+    profitShareRate: 0.10,
+    emotionalMultiplier: true,
+  };
+
+  const compensation = calculateCompensation(compParams);
+
+  const roast = generateRoast({
+    scores,
+    compensation,
+    totalAssetsUsd: scanResult.totalValue.totalUsd,
+    winRate: scanResult.pnlOverview.winRate,
+    exAddress: address,
+    selfScan: false,
+  });
+
+  const report: BreakupReport = {
+    exAddress: address,
+    relationshipStart,
+    relationshipEnd,
+    walletData: {
+      totalAssetsUsd: scanResult.totalValue.totalUsd,
+      winRate: scanResult.pnlOverview.winRate,
+      tradeCount: scanResult.pnlOverview.tradeCount,
+    },
+    scores,
+    compensation,
+    roast,
+    caseNumber: generateCaseNumber(),
+  };
+
+  console.log(formatScanReport(report));
+  console.log(`\n⏰ 刷新時間：${new Date().toLocaleString()}`);
+  console.log("💡 使用 'exchain refresh <address>' 隨時刷新最新數據");
 }
 
 async function runLock(args: string[]) {

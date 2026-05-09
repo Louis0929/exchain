@@ -32,27 +32,32 @@ export function calculateCompensation(params: CompensationParams): CompensationR
   const emotionalDamages = (baseCompensation + profitShare) * (emotionalMultiplierValue - 1);
   const total = baseCompensation + profitShare + emotionalDamages;
 
+  const roundedBase = Math.round(baseCompensation * 100) / 100;
+  const roundedProfit = Math.round(profitShare * 100) / 100;
+  const roundedEmotional = Math.round(emotionalDamages * 100) / 100;
+  const roundedTotal = Math.round((roundedBase + roundedProfit + roundedEmotional) * 100) / 100;
+
   return {
-    baseCompensation: Math.round(baseCompensation * 100) / 100,
-    profitShare: Math.round(profitShare * 100) / 100,
-    emotionalDamages: Math.round(emotionalDamages * 100) / 100,
+    baseCompensation: roundedBase,
+    profitShare: roundedProfit,
+    emotionalDamages: roundedEmotional,
     emotionalMultiplier: emotionalMultiplierValue,
-    total: Math.round(total * 100) / 100,
+    total: roundedTotal,
     currency: "USD",
     breakdown: [
       {
         label: "基礎補償",
-        amount: Math.round(baseCompensation * 100) / 100,
+        amount: roundedBase,
         detail: `前任總資產 $${(totalAssetsUsd || 0).toLocaleString()} × ${(baseRate * 100).toFixed(0)}%`,
       },
       {
         label: "關係期間收益分成",
-        amount: Math.round(profitShare * 100) / 100,
+        amount: roundedProfit,
         detail: `已實現盈虧 $${(realizedPnlUsd || 0).toLocaleString()} × ${(profitShareRate * 100).toFixed(0)}%`,
       },
       {
         label: "精神損失費",
-        amount: Math.round(emotionalDamages * 100) / 100,
+        amount: roundedEmotional,
         detail: emotionalReason || "未啟用",
       },
     ],

@@ -84,6 +84,16 @@ export interface LockContractState {
   bDeposited: boolean;
 }
 
+export interface ScanRequest {
+  address: string;
+  relationshipStart?: string;
+  relationshipEnd?: string;
+  chains?: string[];
+  baseRate?: number;
+  profitShareRate?: number;
+  emotionalMultiplier?: boolean;
+}
+
 export interface BreakupReport {
   exAddress: string;
   relationshipStart: string;

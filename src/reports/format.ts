@@ -80,7 +80,10 @@ export function formatScanReport(report: BreakupReport): string {
   }
 
   lines.push("");
-  lines.push("[📤 分享到 Twitter]  [📸 生成圖片]  [🔗 建立 ExChain Lock]");
+  lines.push("[📤 分享到 Twitter]  [📸 生成圖片]  [📨 發送鏈上存證]  [🔗 建立 ExChain Lock]");
+  lines.push("");
+  lines.push("💡 使用 'exchain summons <address>' 發送鏈上存證到對方錢包");
+  lines.push("💡 使用 'exchain refresh <address>' 實時刷新對方錢包數據");
   lines.push("");
   lines.push("* 純屬娛樂，數據來自公開區塊鏈");
 
