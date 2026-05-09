@@ -1,134 +1,186 @@
-# ExChain — Breakup on-chain calculator & relationship lock
+<div align="center">
 
-ExChain is a blockchain-based breakup calculator and on-chain relationship lock agent built on OnchainOS. It helps users calculate breakup compensation based on their ex's wallet activity and create on-chain relationship locks with USDC deposits.
+# ExChain
 
-## Features
+### 💔 分手鏈上計算器 & 鏈上關係鎖
+### 💔 Breakup On-Chain Calculator & Relationship Lock
 
-### 1. Breakup Calculator
-- **Wallet Scan**: Analyze ex's wallet holdings and trading activity
-- **Compensation Calculation**: Calculate breakup compensation based on assets and profit
-- **AI Roast**: Generate humorous roast text based on wallet activity
-- **Report Generation**: Create formatted reports with ASCII art and statistics
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Powered by OnchainOS](https://img.shields.io/badge/Powered%20by-OnchainOS-00f0ff)](https://web3.okx.com)
 
-### 2. Relationship Lock
-- **Contract Deployment**: Deploy ExChain Lock smart contracts
-- **USDC Deposit**: Deposit USDC into the contract
-- **Template Selection**: Choose from pre-defined templates (peace, negotiate, punish, custom)
-- **Custom Ratios**: Define custom split ratios for custom templates
+**Your ex said they're broke. The blockchain disagrees.**
 
-## Installation
+**前任說沒錢？區塊鏈不同意。**
 
-1. **Install Node.js and npm**
+</div>
 
-2. **Clone the repository**:
-   ```bash
-   git clone https://github.com/Louis0929/exchain.git
-   cd exchain
-   ```
+---
 
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+## 🌐 English
 
-4. **Install OnchainOS CLI**:
-   - For Windows:
-     ```powershell
-     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/okx/onchainos-skills/main/install.ps1" -OutFile "$env:TEMP\onchainos-install.ps1"
-     & "$env:TEMP\onchainos-install.ps1"
-     ```
-   - For macOS/Linux:
-     ```bash
-     curl -sSL "https://raw.githubusercontent.com/okx/onchainos-skills/main/install.sh" | sh
-     ```
+ExChain is a Web3 breakup calculator that analyzes your ex's on-chain wallet activity and calculates fair compensation. Deploy relationship locks with USDC deposits on-chain. Built on [OnchainOS](https://web3.okx.com) with OKX Web3 API.
 
-5. **Install ExChain CLI**:
-   ```bash
-   npm install -g .
-   ```
+### ✨ Features
 
-## Usage
+- **🔍 Wallet Scan** — Analyze ex's on-chain assets, PnL, and trading patterns across 8+ chains
+- **💰 Compensation Calculator** — Calculate breakup compensation based on assets, profits, and emotional damage
+- **🕵️ Lie Index** — Detect how much they lied about being "broke"
+- **🔥 AI Roast** — AI-generated verdict based on wallet behavior
+- **⚔️ On-Chain Summons** — Send USDC on-chain as legal proof (Base chain)
+- **⛓️ Relationship Lock** — Deploy smart contracts with USDC deposits (peace / negotiate / punish / custom)
+- **🎮 Cyberpunk UI** — Glitch effects, scanlines, neon glow, holographic text
 
-### CLI
+### 🚀 Quick Start
 
-#### Scan Wallet
 ```bash
-exchain scan <address> [--from <date>] [--to <date>] [--chains <chains>]
+# Clone
+git clone https://github.com/Louis0929/exchain.git
+cd exchain
+
+# Install
+npm install
+
+# Start web app
+cd web && npm run dev
+
+# Or use CLI
+npx tsx src/agent/cli.ts scan 0x28C6c06298d31479934E3D29e2AA5bf86cA32e17
 ```
 
-- `<address>`: Ex's wallet address
-- `--from <date>`: Relationship start date (default: 2023-01-01)
-- `--to <date>`: Relationship end date (default: today)
-- `--chains <chains>`: Chains to scan (comma-separated, default: ethereum,base,bsc,arbitrum)
+### 📖 CLI Commands
 
-#### Create Relationship Lock
 ```bash
-exchain lock --amount <USDC> --duration <months> --template <peace|negotiate|punish|custom> [--custom-ratio <bps>]
+# Scan ex's wallet
+exchain scan <address> [--from 2023-01-01] [--to 2025-05-01] [--chains ethereum,base,bsc]
+
+# Send on-chain summons (requires wallet login)
+exchain summons <address> --amount 6227 --chain base
+
+# Refresh live data
+exchain refresh <address>
+
+# Deploy relationship lock
+exchain lock --amount 1000 --duration 12 --template peace
 ```
 
-- `--amount <USDC>`: USDC amount to deposit (per party)
-- `--duration <months>`: Lock duration in months (default: 12)
-- `--template <peace|negotiate|punish|custom>`: Lock template (default: peace)
-- `--custom-ratio <bps>`: Custom split ratio in basis points (default: 10000)
+### 🏗 Architecture
 
-### Claude Code
-
-1. **Start Claude Code**:
-   ```bash
-   cd onchainos-skills
-   claude-code --mcp-server .
-   ```
-
-2. **Use natural language commands**:
-   ```
-   Claude Code, 計算我前任錢包的分手補償金
-   Claude Code, 掃描錢包 0x28C6c06298d31479934E3D29e2AA5bf86cA32e17
-   Claude Code, 建立一個 1000 USDC 的關係鎖，為期 12 個月
-   ```
-
-## Development
-
-### Build
-```bash
-npm run build
+```
+exchain/
+├── src/
+│   ├── agent/          # Core logic (scanner, scoring, calculator, roast, deployer)
+│   ├── server/         # Express API (scan, summons endpoints)
+│   ├── types/          # TypeScript type definitions
+│   ├── utils/          # OnchainOS integration layer
+│   └── reports/        # Formatted output
+├── web/                # Cyberpunk React frontend (Vite + Tailwind)
+├── contracts/          # Solidity smart contracts (ExChainLock, ExChainCertificate)
+└── onchainos-skills/   # Claude Code / OnchainOS skill definitions
 ```
 
-### Run Tests
+### 🔐 OKX Wallet Setup
+
 ```bash
-npm run test
+# Install OnchainOS CLI (Windows)
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/okx/onchainos-skills/main/install.ps1" -OutFile "$env:TEMP\onchainos-install.ps1"
+& "$env:TEMP\onchainos-install.ps1"
+
+# Login
+onchainos wallet login your@email.com --locale zh-CN
+onchainos wallet verify <code>
 ```
 
-### Run in Development Mode
+Or set environment variables:
 ```bash
-npm run dev scan <address>
+OKX_API_KEY=your_key
+OKX_SECRET_KEY=your_secret
+OKX_PASSPHRASE=your_passphrase
 ```
 
-## Architecture
+---
 
-### Core Modules
-- **Agent CLI**: Command-line interface (src/agent/cli.ts)
-- **Scanner**: Wallet scanning and data collection (src/agent/scanner.ts)
-- **Scoring**: User scoring and tagging (src/agent/scoring.ts)
-- **Calculator**: Compensation calculation (src/agent/calculator.ts)
-- **Roast**: AI roast generation (src/agent/roast.ts)
-- **Deployer**: Smart contract deployment (src/agent/deployer.ts)
+## 🀄 中文
 
-### OnchainOS Skills
-- **exchain**: Main skill for ExChain functionality (onchainos-skills/skills/exchain/SKILL.md)
-- **Workflows**:
-  - exchain-breakup-calculator.md: Breakup compensation calculation workflow
-  - exchain-relationship-lock.md: Relationship lock workflow
+ExChain 是一個 Web3 分手計算器，分析前任的鏈上錢包活動，計算合理補償金。還能部署鏈上關係鎖智能合約，用 USDC 作為承諾保證。基於 [OnchainOS](https://web3.okx.com) 及 OKX Web3 API 打造。
 
-## Smart Contracts
+### ✨ 功能
 
-- **ExChainLock.sol**: Main relationship lock smart contract (contracts/contracts/ExChainLock.sol)
-- **ExChainCertificate.sol**: ERC721 relationship certificate (contracts/contracts/ExChainCertificate.sol)
+- **🔍 錢包掃描** — 跨 8+ 條鏈分析前任的鏈上資產、盈虧、交易習慣
+- **💰 補償金計算** — 根據資產、收益、精神損失算出分手補償金
+- **🕵️ 說謊指數** — 偵測前任「裝窮」的程度
+- **🔥 AI 吐槽** — 根據錢包行為生成 AI 法官感言
+- **⚔️ 鏈上存證** — 發送 USDC 到前任錢包作為鏈上法律存證（Base 鏈）
+- **⛓️ 關係鎖** — 部署智能合約，雙方鎖入 USDC（和平 / 協商 / 懲罰 / 自訂）
+- **🎮 賽博龐克 UI** — 故障效果、掃描線、霓虹光暈、全息文字
 
-## Tests
+### 🚀 快速開始
 
-- TypeScript tests: src/agent/*.test.ts
-- Solidity tests: contracts/test/ExChainLock.js
+```bash
+# 複製
+git clone https://github.com/Louis0929/exchain.git
+cd exchain
 
-## License
+# 安裝
+npm install
+
+# 啟動網頁
+cd web && npm run dev
+
+# 或用 CLI
+npx tsx src/agent/cli.ts scan 0x28C6c06298d31479934E3D29e2AA5bf86cA32e17
+```
+
+### 📖 CLI 指令
+
+```bash
+# 掃描前任錢包
+exchain scan <地址> [--from 2023-01-01] [--to 2025-05-01] [--chains ethereum,base,bsc]
+
+# 發送鏈上存證（需先登入錢包）
+exchain summons <地址> --amount 6227 --chain base
+
+# 刷新即時數據
+exchain refresh <地址>
+
+# 部署關係鎖
+exchain lock --amount 1000 --duration 12 --template peace
+```
+
+### 🔐 OKX 錢包設定
+
+```bash
+# 安裝 OnchainOS CLI（Windows）
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/okx/onchainos-skills/main/install.ps1" -OutFile "$env:TEMP\onchainos-install.ps1"
+& "$env:TEMP\onchainos-install.ps1"
+
+# 登入
+onchainos wallet login 你的@email.com --locale zh-CN
+onchainos wallet verify 驗證碼
+```
+
+或設定環境變數：
+```bash
+OKX_API_KEY=你的KEY
+OKX_SECRET_KEY=你的SECRET
+OKX_PASSPHRASE=你的密碼
+```
+
+---
+
+## 📜 Smart Contracts
+
+| Contract | Description |
+|----------|-------------|
+| `ExChainLock.sol` | Relationship lock with USDC deposits and template-based penalties |
+| `ExChainCertificate.sol` | ERC721 relationship certificate NFT |
+
+## 🧪 Tests
+
+```bash
+npm run test           # TypeScript unit tests
+cd contracts && npx hardhat test  # Solidity tests
+```
+
+## 📄 License
 
 MIT
