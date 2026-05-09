@@ -4,6 +4,7 @@ import { INVESTMENT_TAG_LABELS } from "../types/exchain.js";
 export function formatScanReport(report: BreakupReport): string {
   const lines: string[] = [];
   const c = report.compensation;
+  const bp = report.scores.behavioralProfile;
 
   lines.push("╔═══════════════════════════════════════════════════════════╗");
   lines.push("║                    💀 WANTED 💀                           ║");
@@ -40,6 +41,30 @@ export function formatScanReport(report: BreakupReport): string {
     lines.push(`║     "他說沒錢，但鏈上資產 $${report.walletData.totalAssetsUsd.toLocaleString()}+"                          ║`);
   }
   lines.push("║                                                           ║");
+
+  // Behavioral profile section
+  if (bp && (bp.degenScore > 0 || bp.rugPullCount > 0 || bp.memeTradeFrequency > 0)) {
+    lines.push("║  ┌─── 韭菜行為分析 ────────────────────────────────────┐  ║");
+    lines.push("║  │                                                     │  ║");
+    lines.push(`║  │   🎰 Degen 指數:  ${String(bp.degenScore).padEnd(3)}/100                              │  ║`);
+    lines.push(`║  │   📉 平均滑點:    ${String(bp.avgSlippageLoss.toFixed(1) + "%").padEnd(6)}                              │  ║`);
+    lines.push(`║  │   🐶 Meme 佔比:   ${String((bp.memeTradeFrequency * 100).toFixed(0) + "%").padEnd(6)}                              │  ║`);
+    lines.push(`║  │   🎯 被 Rug:      ${String(bp.rugPullCount + " 次").padEnd(6)}                              │  ║`);
+    lines.push(`║  │   ⚠️ 高風險交易:   ${String(bp.highRiskTradeCount + " 筆").padEnd(6)}                              │  ║`);
+    lines.push("║  │                                                     │  ║");
+    lines.push("║  └─────────────────────────────────────────────────────┘  ║");
+    lines.push("║                                                           ║");
+  }
+
+  // Scan meta
+  if (report.scanMeta) {
+    lines.push(`║  📍 主力鏈: ${report.scanMeta.dominantChain}（${report.scanMeta.dominantChainReason.slice(0, 30)}）   ║`);
+    if (report.scanMeta.strategySwitch) {
+      lines.push(`║  🔄 策略切換: ${report.scanMeta.strategySwitchReason?.slice(0, 40) || "已自動切換"}      ║`);
+    }
+    lines.push("║                                                           ║");
+  }
+
   lines.push("╚═══════════════════════════════════════════════════════════╝");
   lines.push("");
 
@@ -68,7 +93,11 @@ export function formatScanReport(report: BreakupReport): string {
     lines.push("║                                                           ║");
     lines.push("║  🤖 法官 AI 感言：                                        ║");
     lines.push("║  ┌─────────────────────────────────────────────────────┐  ║");
-    lines.push(`║  │  ${report.roast.padEnd(52)}│  ║`);
+    // Wrap long roast text
+    const roastLines = wrapText(report.roast, 50);
+    for (const rl of roastLines) {
+      lines.push(`║  │  ${rl.padEnd(52)}│  ║`);
+    }
     lines.push("║  └─────────────────────────────────────────────────────┘  ║");
     lines.push("║                                                           ║");
     lines.push("║  * 本通知書純屬娛樂，不構成法律建議                        ║");
@@ -93,4 +122,17 @@ export function formatScanReport(report: BreakupReport): string {
 function maskAddress(addr: string): string {
   if (addr.length <= 12) return addr;
   return addr.slice(0, 6) + "..." + addr.slice(-4);
+}
+
+function wrapText(text: string, maxLen: number): string[] {
+  const lines: string[] = [];
+  let remaining = text;
+  while (remaining.length > maxLen) {
+    let breakAt = remaining.lastIndexOf(" ", maxLen);
+    if (breakAt <= 0) breakAt = maxLen;
+    lines.push(remaining.slice(0, breakAt));
+    remaining = remaining.slice(breakAt).trimStart();
+  }
+  if (remaining.length > 0) lines.push(remaining);
+  return lines;
 }

@@ -1,6 +1,5 @@
-import type { WalletScores, InvestmentTag, EarningScore } from "../types/exchain.js";
+import type { WalletScores, InvestmentTag, EarningScore, BehavioralProfile } from "../types/exchain.js";
 import type { ScanResult } from "./scanner.js";
-import { INVESTMENT_TAG_LABELS } from "../types/exchain.js";
 import { getSmartMoneyLeaderboard } from "../utils/onchainos.js";
 
 export function calculateEarningIndex(totalAssetsUsd: number): EarningScore {
@@ -32,13 +31,11 @@ export function calculateEarningIndex(totalAssetsUsd: number): EarningScore {
 
 export function classifyInvestmentStyle(scanResult: ScanResult): InvestmentTag[] {
   const tags: InvestmentTag[] = [];
-  const { tokenPnL, pnlOverview, balances } = scanResult;
+  const { tokenPnL, pnlOverview, balances, behavioralProfile } = scanResult;
 
-  // Check holdings for style classification
   const allTokens = (balances?.chains || []).flatMap((c) => c?.tokens || []);
-  const hasNft = false; // Would need NFT-specific API
   const memeTokens = allTokens.filter((t) =>
-    /doge|pepe|shib|floki|wojak|bonk|meme/i.test(t.symbol)
+    /doge|pepe|shib|floki|wojak|bonk|meme|trump|fart|ponke|neiro|mog/i.test(t.symbol)
   );
   const defiTokens = allTokens.filter((t) =>
     /aave|comp|uni|crv|mkr|ldo|rpl|sushi/i.test(t.symbol)
@@ -48,6 +45,15 @@ export function classifyInvestmentStyle(scanResult: ScanResult): InvestmentTag[]
     0
   );
   const totalValue = scanResult.totalValue.totalUsd || 1;
+
+  // Behavioral profile tags
+  if (behavioralProfile.rugPullCount > 0) {
+    tags.push("rug_pull_victim");
+  }
+
+  if (behavioralProfile.degenScore >= 60) {
+    tags.push("degen");
+  }
 
   if (memeTokens.length >= 3 || (memeTokens.reduce((s, t) => s + t.valueUsd, 0) / totalValue) > 0.3) {
     tags.push("meme_player");
@@ -74,7 +80,6 @@ export function classifyInvestmentStyle(scanResult: ScanResult): InvestmentTag[]
     tags.push("shrimp");
   }
 
-  // Default: if no specific tags
   if (tags.length === 0) {
     tags.push("trend_trader");
   }
@@ -110,7 +115,8 @@ export function getActivityLevel(tradeCount: number): "gym_rat" | "chill" {
   return tradeCount >= 50 ? "gym_rat" : "chill";
 }
 
-export function getRiskLevel(winRate: number, totalTrades: number): WalletScores["riskLevel"] {
+export function getRiskLevel(winRate: number, totalTrades: number, degenScore?: number): WalletScores["riskLevel"] {
+  if (degenScore !== undefined && degenScore >= 70) return "degen";
   if (winRate < 0.3 && totalTrades > 20) return "degen";
   if (winRate < 0.4) return "aggressive";
   if (winRate < 0.6) return "moderate";
@@ -124,8 +130,16 @@ export function scoreWallet(scanResult: ScanResult): WalletScores {
   const activityLevel = getActivityLevel(scanResult.pnlOverview.tradeCount);
   const riskLevel = getRiskLevel(
     scanResult.pnlOverview.winRate,
-    scanResult.pnlOverview.tradeCount
+    scanResult.pnlOverview.tradeCount,
+    scanResult.behavioralProfile.degenScore
   );
 
-  return { earningIndex, investmentTags, lieIndex, activityLevel, riskLevel };
+  return {
+    earningIndex,
+    investmentTags,
+    lieIndex,
+    activityLevel,
+    riskLevel,
+    behavioralProfile: scanResult.behavioralProfile,
+  };
 }

@@ -1,6 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { calculateCompensation } from "./calculator.js";
-import type { CompensationParams } from "../types/exchain.js";
+import type { CompensationParams, BehavioralProfile } from "../types/exchain.js";
+
+const defaultBehavioralProfile: BehavioralProfile = {
+  avgSlippageLoss: 5,
+  memeTradeFrequency: 0.1,
+  rugPullCount: 0,
+  highRiskTradeCount: 0,
+  degenScore: 10,
+  chainActivity: { ethereum: 45_230 },
+  dominantChain: "ethereum",
+  dominantChainReason: "Default",
+};
 
 describe("calculateCompensation", () => {
   const baseParams: CompensationParams = {
@@ -55,10 +66,51 @@ describe("calculateCompensation", () => {
 
   it("matches PRD example: $45K assets, $18.9K PnL, 62% winRate", () => {
     const result = calculateCompensation(baseParams);
-    // base: 2261.5 + profit: 1890 = 4151.5
-    // emotional: 62% is normal → ×1.0 → 0
-    // total: 4151.5
     expect(result.total).toBe(4151.5);
+  });
+
+  it("applies degen penalty for high-risk behavioral profile", () => {
+    const degenProfile: BehavioralProfile = {
+      ...defaultBehavioralProfile,
+      degenScore: 70,
+      memeTradeFrequency: 0.5,
+      rugPullCount: 2,
+      highRiskTradeCount: 5,
+      avgSlippageLoss: 25,
+    };
+    const result = calculateCompensation({ ...baseParams, behavioralProfile: degenProfile });
+    expect(result.degenMultiplier).toBeGreaterThan(1.0);
+    expect(result.degenPenalty).toBeGreaterThan(0);
+    expect(result.total).toBeGreaterThan(4151.5);
+  });
+
+  it("no degen penalty for conservative behavioral profile", () => {
+    const conservativeProfile: BehavioralProfile = {
+      ...defaultBehavioralProfile,
+      degenScore: 5,
+      memeTradeFrequency: 0,
+      rugPullCount: 0,
+      highRiskTradeCount: 0,
+      avgSlippageLoss: 1,
+    };
+    const result = calculateCompensation({ ...baseParams, behavioralProfile: conservativeProfile });
+    expect(result.degenMultiplier).toBe(1.0);
+    expect(result.degenPenalty).toBe(0);
+  });
+
+  it("includes degen penalty in breakdown", () => {
+    const degenProfile: BehavioralProfile = {
+      ...defaultBehavioralProfile,
+      degenScore: 60,
+      memeTradeFrequency: 0.4,
+      rugPullCount: 1,
+      highRiskTradeCount: 3,
+      avgSlippageLoss: 15,
+    };
+    const result = calculateCompensation({ ...baseParams, behavioralProfile: degenProfile });
+    const degenItem = result.breakdown.find(b => b.label === "韭菜行為加罰");
+    expect(degenItem).toBeDefined();
+    expect(degenItem!.amount).toBeGreaterThan(0);
   });
 
   it("supports custom baseRate", () => {

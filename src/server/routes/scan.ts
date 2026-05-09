@@ -35,6 +35,7 @@ scanRouter.post("/scan", async (req, res, next) => {
       baseRate: body.baseRate ?? 0.05,
       profitShareRate: body.profitShareRate ?? 0.10,
       emotionalMultiplier: body.emotionalMultiplier ?? true,
+      behavioralProfile: scanResult.behavioralProfile,
     };
     const compensation = calculateCompensation(compParams);
 
@@ -60,6 +61,7 @@ scanRouter.post("/scan", async (req, res, next) => {
       compensation,
       roast,
       caseNumber: generateCaseNumber(),
+      scanMeta: scanResult.scanMeta,
     };
 
     res.json({ report });

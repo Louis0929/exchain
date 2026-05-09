@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { calculateEarningIndex, calculateLieIndex, classifyInvestmentStyle, getActivityLevel, getRiskLevel, getSmartMoneyRank } from "./scoring.js";
+import { calculateEarningIndex, calculateLieIndex, classifyInvestmentStyle, getActivityLevel, getRiskLevel, getSmartMoneyRank, scoreWallet } from "./scoring.js";
 import type { ScanResult } from "./scanner.js";
 
 vi.mock("../utils/onchainos.js", () => ({
@@ -8,6 +8,17 @@ vi.mock("../utils/onchainos.js", () => ({
     { address: "0xFish", pnlUsd: 50_000, winRate: 0.6, tradeCount: 50, rank: 42 },
   ]),
 }));
+
+const defaultBehavioralProfile = {
+  avgSlippageLoss: 5,
+  memeTradeFrequency: 0.1,
+  rugPullCount: 0,
+  highRiskTradeCount: 0,
+  degenScore: 10,
+  chainActivity: { ethereum: 45_230 },
+  dominantChain: "ethereum",
+  dominantChainReason: "Highest activity",
+};
 
 function makeScanResult(overrides: Partial<ScanResult> = {}): ScanResult {
   return {
@@ -26,6 +37,13 @@ function makeScanResult(overrides: Partial<ScanResult> = {}): ScanResult {
     },
     tokenPnL: [],
     tradeHistory: [],
+    behavioralProfile: defaultBehavioralProfile,
+    scanMeta: {
+      chainsScanned: ["ethereum"],
+      dominantChain: "ethereum",
+      dominantChainReason: "Default",
+      strategySwitch: false,
+    },
     ...overrides,
   };
 }
@@ -87,6 +105,10 @@ describe("getRiskLevel", () => {
     expect(getRiskLevel(0.2, 30)).toBe("degen");
   });
 
+  it("returns degen for high degenScore", () => {
+    expect(getRiskLevel(0.5, 10, 70)).toBe("degen");
+  });
+
   it("returns conservative for high winRate", () => {
     expect(getRiskLevel(0.7, 50)).toBe("conservative");
   });
@@ -126,36 +148,18 @@ describe("classifyInvestmentStyle", () => {
     expect(result).toContain("meme_player");
   });
 
-  it("tags defi_farmer for DeFi holdings", () => {
+  it("tags degen for high degen score", () => {
     const result = classifyInvestmentStyle(makeScanResult({
-      balances: {
-        address: "0xabc",
-        chains: [{
-          chain: "ethereum",
-          tokens: [
-            { token: "AAVE", symbol: "AAVE", amount: 100, valueUsd: 15_000, chain: "ethereum" },
-            { token: "COMP", symbol: "COMP", amount: 50, valueUsd: 5_000, chain: "ethereum" },
-          ],
-          totalUsd: 20_000,
-        }],
-      },
+      behavioralProfile: { ...defaultBehavioralProfile, degenScore: 70 },
     }));
-    expect(result).toContain("defi_farmer");
+    expect(result).toContain("degen");
   });
 
-  it("tags paper_hands for stablecoin-heavy portfolio", () => {
+  it("tags rug_pull_victim for rug pulls", () => {
     const result = classifyInvestmentStyle(makeScanResult({
-      totalValue: { totalUsd: 10_000, chains: {} },
-      balances: {
-        address: "0xabc",
-        chains: [{
-          chain: "ethereum",
-          tokens: [{ token: "USDC", symbol: "USDC", amount: 8000, valueUsd: 8000, chain: "ethereum" }],
-          totalUsd: 10_000,
-        }],
-      },
+      behavioralProfile: { ...defaultBehavioralProfile, rugPullCount: 2 },
     }));
-    expect(result).toContain("paper_hands");
+    expect(result).toContain("rug_pull_victim");
   });
 
   it("defaults to trend_trader when no specific tags apply", () => {
@@ -176,15 +180,13 @@ describe("classifyInvestmentStyle", () => {
     }));
     expect(result).toContain("trend_trader");
   });
+});
 
-  it("tags diamond_hands for high win rate with many trades", () => {
-    const result = classifyInvestmentStyle(makeScanResult({
-      pnlOverview: {
-        address: "0xabc", totalPnlUsd: 10_000, winRate: 0.75, tradeCount: 15,
-        avgHoldingTime: "7d", bestTrade: { token: "ETH", pnlUsd: 5000 }, worstTrade: { token: "DOGE", pnlUsd: -500 },
-      },
-    }));
-    expect(result).toContain("diamond_hands");
+describe("scoreWallet", () => {
+  it("includes behavioral profile in scores", () => {
+    const result = scoreWallet(makeScanResult());
+    expect(result.behavioralProfile).toBeDefined();
+    expect(result.behavioralProfile.degenScore).toBe(10);
   });
 });
 

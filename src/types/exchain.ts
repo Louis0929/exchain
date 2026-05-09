@@ -12,7 +12,9 @@ export type InvestmentTag =
   | "defi_farmer"
   | "meme_player"
   | "nft_collector"
-  | "trend_trader";
+  | "trend_trader"
+  | "rug_pull_victim"
+  | "degen";
 
 export const INVESTMENT_TAG_LABELS: Record<InvestmentTag, string> = {
   diamond_hands: "💎 鑽石手",
@@ -23,7 +25,20 @@ export const INVESTMENT_TAG_LABELS: Record<InvestmentTag, string> = {
   meme_player: "🐶 Meme 玩家",
   nft_collector: "🎨 NFT 收藏家",
   trend_trader: "📈 趨勢交易者",
+  rug_pull_victim: "🎯 被 Rug 受害者",
+  degen: "🎰 Degen",
 };
+
+export interface BehavioralProfile {
+  avgSlippageLoss: number;
+  memeTradeFrequency: number;
+  rugPullCount: number;
+  highRiskTradeCount: number;
+  degenScore: number;
+  chainActivity: Record<string, number>;
+  dominantChain: string;
+  dominantChainReason: string;
+}
 
 export interface WalletScores {
   earningIndex: EarningScore;
@@ -31,6 +46,7 @@ export interface WalletScores {
   lieIndex: number;     // 0-100
   activityLevel: "gym_rat" | "chill";  // 🏋️ 鏈上健身狂 | 🦥 佛系持幣
   riskLevel: "conservative" | "moderate" | "aggressive" | "degen";
+  behavioralProfile: BehavioralProfile;
 }
 
 export interface CompensationParams {
@@ -43,13 +59,16 @@ export interface CompensationParams {
   baseRate: number;            // 0.01-0.20, default 0.05
   profitShareRate: number;     // 0-0.50, default 0.10
   emotionalMultiplier: boolean;
+  behavioralProfile?: BehavioralProfile;
 }
 
 export interface CompensationResult {
   baseCompensation: number;
   profitShare: number;
   emotionalDamages: number;
+  degenPenalty: number;
   emotionalMultiplier: number;
+  degenMultiplier: number;
   total: number;
   currency: "USD";
   breakdown: {
@@ -107,4 +126,11 @@ export interface BreakupReport {
   compensation: CompensationResult;
   roast: string;
   caseNumber: string;
+  scanMeta: {
+    chainsScanned: string[];
+    dominantChain: string;
+    dominantChainReason: string;
+    strategySwitch: boolean;
+    strategySwitchReason?: string;
+  };
 }

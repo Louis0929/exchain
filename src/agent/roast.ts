@@ -1,4 +1,4 @@
-import type { WalletScores, CompensationResult } from "../types/exchain.js";
+import type { WalletScores, CompensationResult, BehavioralProfile } from "../types/exchain.js";
 import { INVESTMENT_TAG_LABELS } from "../types/exchain.js";
 
 interface RoastInput {
@@ -10,111 +10,97 @@ interface RoastInput {
   selfScan: boolean;
 }
 
-const ROAST_TEMPLATES = {
-  highWinRate: [
-    "你的前任勝率 {winRate}%，穩定盈利，在你們在一起的時候悄悄賺了不少。他說「最近手頭緊」的時候，鏈上顯示他剛買了 3 個 NFT 🖼️。",
-    "你的前任是個交易高手，勝率 {winRate}%。建議補償金翻倍。下次交往前，用 ExChain Lock 鎖定承諾 🔗",
-    "他的交易記錄像開了外掛一樣准，勝率 {winRate}%，這賺的錢肯定有你的份！💰",
-    "你的前任簡直是幣圈巴菲特，勝率 {winRate}%，請問他分紅的時候有想到你嗎？",
-    "這個勝率 {winRate}% 的人，連感情投資都這麼成功？不對，他已經失去你了 🥺",
-    "勝率 {winRate}% 的幣圈高手，卻在感情裡輸得一塌糊塗。這可能是他最失敗的投資 📉",
-  ],
-  losses: [
-    "你的前任勝率只有 {winRate}%，他在鏈上比在感情裡還不靠譜。感情虧也就算了，錢也虧 📉",
-    "你的前任在鏈上虧了，也許分手是對的。至少你不用分擔他的虧損。",
-    "他的交易記錄像個黑洞，勝率 {winRate}%，錢進去就再也回不來了。",
-    "你的前任可能是個反向指標，勝率 {winRate}%，跟他在一起還不如買彩票。",
-    "勝率 {winRate}%？也許他的天賦不在投資，更不在談戀愛 🤷‍♂️",
-    "這個勝率 {winRate}% 的人，可能連什麼是「風險控制」都不知道，包括感情風險",
-  ],
-  memeOnly: [
-    "你的前任是 Meme 幣賭徒，及時止損（分手）是正確的。跟他在一起，你的感情跟 PEPE 幣一樣——瞬間歸零 🐸。",
-    "你的前任只買 Meme 幣，喜歡追風口。可惜感情這件事，不是靠 FOMO 就能贏的。",
-    "他的錢包裡全是 Dogecoin 和 Shiba，勝率不敢看。跟他談戀愛，就像買了個隨機數字生成器。",
-    "你的前任是 Meme 幣收藏家，收集各種零價值代幣，就像收集對你傷害的碎片。",
-    "Meme 幣玩家的愛情，就像他們的投資一樣——充滿了騙局和失望 🎭",
-    "他寧願相信狗狗幣能上月球，也不願相信你能陪他走下去。這種人不分留著過年嗎？",
-  ],
-  stableOnly: [
-    "你的前任連炒幣的勇氣都沒有，全倉穩定幣。分手是你人生中唯一一次冒險 🏃‍♀️。",
-    "你的前任只敢持有穩定幣，感情裡估計也一樣——永遠不會有驚喜 🥱。",
-    "他的錢包像個保險箱，只放 USDC。這樣的人，談戀愛不如談合作 🤝。",
-    "你的前任是穩定幣愛好者，追求安全第一。但愛情這件事，本來就充滿風險啊！",
-    "穩定幣就像他的感情觀——無聊但安全。但你需要的是刺激和激情，不是穩定 🚀",
-    "他的錢包裡只有 USDC，就像他的腦袋裡只有「保本」。跟這樣的人談戀愛，生活會很無聊",
-  ],
-  whale: [
-    "你的前任是個鯨魚 🐋，錢包裡有 ${formattedAssets}。他說沒錢，你信了？",
-    "你的前任比中本聰還神秘，錢包裡藏著 ${formattedAssets}，卻說自己是「普通上班族」。",
-    "他的錢包資產是你年薪的 ${yearMultiple} 倍，卻連一杯奶茶錢都要跟你 AA。",
-    "你的前任是個偽裝成普通人的富豪，錢包裡的 ${formattedAssets} 足以買一套房子了。",
-    "這個擁有 ${formattedAssets} 的鯨魚，卻連感情都要斤斤計較。真是幣圈鐵公雞 🐔",
-    "他的錢包像個小金庫，卻只願給你零花錢。這種人不分留著過年嗎？",
-    "${formattedAssets} 的資產，卻給不了你安全感。也許錢不是衡量愛情的唯一標準，但至少能看出態度",
-    "你的前任是個隱形富豪，錢包裡的 ${formattedAssets} 讓你懷疑人生。為什麼他不願為你花一分錢？",
-  ],
-  zeroBalance: [
-    "你的前任是 true degen，錢包比心還空。補償金：$0。窮到連補償金都算不出 🍜。",
-    "他的錢包就像他的感情一樣——空無一物。建議下一任找個有錢包餘額的。",
-    "你的前任是個流浪漢，錢包裡連 Gas 費都沒有。談戀愛不如談空氣 💨。",
-    "錢包餘額 $0，感情餘額也是 $0。這個人已經沒有任何價值了 🚮",
-    "他的錢包比臉還乾淨，也許他適合孤獨一生 🌙",
-  ],
-  selfScan: [
-    "掃描自己？你是不是沒有前任 😢 要不要考慮用 ExChain Lock 鎖定自己？",
-    "自己掃自己？這是在檢查自己的錢包，還是在檢查自己的傷疤？",
-    "原來最該掃描的人是自己。也許你需要的不是前任，而是一個新的開始 🌟",
-    "自己掃描自己，是一種勇氣。但請記住，過去的已經過去了 🕊️",
-  ],
-  default: [
-    "你的前任說沒錢，但鏈上不這麼說 👀。",
-    "鏈上數據不會說謊，但他會。",
-    "他的錢包顯示他很有錢，但他卻說自己是「月光族」。",
-    "你的前任藏得很深，但鏈上數據不會騙人。",
-    "數據顯示的和他說的完全不同。這個人到底有多少秘密？ 🕵️",
-    "鏈上的痕跡不會消失，就像他對你的傷害一樣。但請記住，你值得更好的 🌺",
-    "他以為能瞞住你，但區塊鏈不會說謊。這就是他的代價 💔",
-  ],
-};
+function buildDataDrivenRoast(input: RoastInput): string {
+  const { scores, compensation, totalAssetsUsd, winRate } = input;
+  const profile = scores.behavioralProfile;
+  const parts: string[] = [];
 
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+  // --- Opening: verdict based on lie index + assets ---
+  if (totalAssetsUsd > 100_000) {
+    parts.push(`你的前任錢包裡躺著 $${totalAssetsUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}，說謊指數 ${scores.lieIndex}%。他說「最近手頭緊」的時候，區塊鏈顯示他剛入帳五位數。`);
+  } else if (totalAssetsUsd > 10_000) {
+    parts.push(`你的前任錢包有 $${totalAssetsUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}，說謊指數 ${scores.lieIndex}%。「沒錢」這個藉口在鏈上不成立。`);
+  } else if (totalAssetsUsd <= 0) {
+    return `你的前任是 true degen，錢包比心還空。補償金：$0。窮到連補償金都算不出 🍜。區塊鏈的透明性讓我們看到殘酷的真相——他真的沒有錢，但也真的沒有用心。`;
+  } else {
+    parts.push(`你的前任錢包只剩 $${totalAssetsUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}，說謊指數 ${scores.lieIndex}%。不多，但至少鏈上數據誠實。`);
+  }
+
+  // --- Behavioral evidence: the core data-driven section ---
+  if (profile) {
+    const evidence: string[] = [];
+
+    // Slippage loss
+    if (profile.avgSlippageLoss > 15) {
+      evidence.push(`DEX 交易平均滑點損失 ${profile.avgSlippageLoss.toFixed(1)}%，這種交易水平證明他的判斷力在投資和感情上一樣糟糕`);
+    } else if (profile.avgSlippageLoss > 5) {
+      evidence.push(`平均滑點損失 ${profile.avgSlippageLoss.toFixed(1)}%，交易執行能力一般，跟他的承諾一樣靠不住`);
+    }
+
+    // Meme trading
+    if (profile.memeTradeFrequency > 0.3) {
+      evidence.push(`${(profile.memeTradeFrequency * 100).toFixed(0)}% 的交易都是 Meme 幣，他寧願相信 DOGE 能上月球，也不願相信你能陪他走下去`);
+    } else if (profile.memeTradeFrequency > 0.1) {
+      evidence.push(`Meme 幣交易佔比 ${(profile.memeTradeFrequency * 100).toFixed(0)}%，把感情當賭博的不只是錢包`);
+    }
+
+    // Rug pulls
+    if (profile.rugPullCount > 0) {
+      evidence.push(`被 Rug Pull 了 ${profile.rugPullCount} 次，連詐騙集團都選擇了他——就像你選擇了他一樣，都是錯付`);
+    }
+
+    // High risk trades
+    if (profile.highRiskTradeCount >= 5) {
+      evidence.push(`${profile.highRiskTradeCount} 筆高風險交易全部虧損，這種人不只是韭菜，是韭菜中的韭菜，建議補償金提高 ${Math.round((compensation.degenMultiplier - 1) * 100)}%`);
+    } else if (profile.highRiskTradeCount >= 2) {
+      evidence.push(`${profile.highRiskTradeCount} 筆高風險交易虧損，他對風險的管理跟對你的承諾一樣——形同虛設`);
+    }
+
+    // Degen score summary
+    if (profile.degenScore >= 60) {
+      evidence.push(`Degen 指數 ${profile.degenScore}/100——他把你們的未來都梭哈在了 Meme 幣上`);
+    } else if (profile.degenScore >= 30) {
+      evidence.push(`Degen 指數 ${profile.degenScore}/100，不算離譜但也不靠譜，就像他這個人`);
+    }
+
+    if (evidence.length > 0) {
+      parts.push("鏈上證據如下：" + evidence.join("；") + "。");
+    }
+  }
+
+  // --- Win rate verdict ---
+  if (winRate > 0.7) {
+    parts.push(`勝率 ${Math.round(winRate * 100)}%，穩定盈利。他在 K 線上賺的每一分錢，都有你陪伴的影子。補償金是他欠你的分紅。`);
+  } else if (winRate < 0.3 && totalAssetsUsd > 0) {
+    parts.push(`勝率只有 ${Math.round(winRate * 100)}%，他在鏈上比在感情裡還不靠譜。分手是正確的止損操作。`);
+  }
+
+  // --- Chain strategy switch ---
+  if (scores.behavioralProfile?.dominantChain && scores.behavioralProfile.dominantChain !== "ethereum") {
+    parts.push(`Agent 偵測到他的主要活動在 ${scores.behavioralProfile.dominantChain} 鏈上，已自動切換分析策略。他想藏，但 ExChain 找到了。`);
+  }
+
+  // --- Compensation verdict ---
+  if (compensation.total > 0) {
+    const degenNote = compensation.degenPenalty > 0
+      ? `（含韭菜行為加罰 $${compensation.degenPenalty.toLocaleString()}）`
+      : "";
+    parts.push(`判定補償金：$${compensation.total.toLocaleString()} ${degenNote}。建議用 ExChain 鏈上存證發送，讓這筆帳上鏈，不可篡改。`);
+  }
+
+  return parts.join(" ");
 }
 
 export function generateRoast(input: RoastInput): string {
   if (input.selfScan) {
-    return pickRandom(ROAST_TEMPLATES.selfScan);
+    return "掃描自己？你是不是沒有前任 😢 也許你需要的不是 ExChain，而是一個用 ExChain Lock 鎖定的下一任。";
   }
 
   if (input.totalAssetsUsd <= 0) {
-    return pickRandom(ROAST_TEMPLATES.zeroBalance);
+    return `你的前任是 true degen，錢包比心還空。補償金：$0。窮到連補償金都算不出 🍜。區塊鏈的透明性讓我們看到殘酷的真相——他真的沒有錢，但也真的沒有用心。`;
   }
 
-  const tagLabels = input.scores.investmentTags
-    .map((t) => INVESTMENT_TAG_LABELS[t])
-    .join(" | ");
-
-  if (input.scores.investmentTags.includes("meme_player")) {
-    return pickRandom(ROAST_TEMPLATES.memeOnly);
-  }
-
-  if (input.totalAssetsUsd > 1000000) {
-    const formattedAssets = input.totalAssetsUsd.toLocaleString(undefined, { maximumFractionDigits: 0 });
-    const yearMultiple = Math.round(input.totalAssetsUsd / 50000); // 假設平均年薪 $50k
-    return pickRandom(ROAST_TEMPLATES.whale)
-      .replace("${formattedAssets}", formattedAssets)
-      .replace("${yearMultiple}", String(yearMultiple));
-  }
-
-  if (input.winRate > 0.7) {
-    return pickRandom(ROAST_TEMPLATES.highWinRate).replace("{winRate}", String(Math.round(input.winRate * 100)));
-  }
-
-  if (input.winRate < 0.3) {
-    return pickRandom(ROAST_TEMPLATES.losses).replace("{winRate}", String(Math.round(input.winRate * 100)));
-  }
-
-  return pickRandom(ROAST_TEMPLATES.default);
+  return buildDataDrivenRoast(input);
 }
 
 export function generateCaseNumber(): string {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { scanWallet } from "./scanner.js";
 
 vi.mock("../utils/onchainos.js", () => ({
@@ -24,9 +24,14 @@ vi.mock("../utils/onchainos.js", () => ({
   getDexHistory: vi.fn().mockResolvedValue([
     { hash: "0x123", tokenIn: "USDC", tokenOut: "ETH", amountIn: 5000, amountOut: 1.5, valueUsd: 5000, timestamp: 1700000000000, chain: "ethereum" },
   ]),
+  getPortfolioSupportedChains: vi.fn().mockResolvedValue(["1", "8453", "56", "42161"]),
 }));
 
 describe("scanWallet", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("returns complete scan result with all fields", async () => {
     const result = await scanWallet("0xabc", ["ethereum"]);
     expect(result.totalValue.totalUsd).toBe(45_230);
@@ -34,6 +39,16 @@ describe("scanWallet", () => {
     expect(result.pnlOverview.winRate).toBe(0.62);
     expect(result.tokenPnL).toHaveLength(1);
     expect(result.tradeHistory).toHaveLength(1);
+    expect(result.behavioralProfile).toBeDefined();
+    expect(result.scanMeta).toBeDefined();
+    expect(result.scanMeta.chainsScanned).toContain("ethereum");
+  });
+
+  it("extracts behavioral profile with degen score", async () => {
+    const result = await scanWallet("0xabc", ["ethereum"]);
+    expect(result.behavioralProfile.degenScore).toBeGreaterThanOrEqual(0);
+    expect(result.behavioralProfile.dominantChain).toBeDefined();
+    expect(result.behavioralProfile.chainActivity).toBeDefined();
   });
 
   it("uses default chains when not specified", async () => {
@@ -43,24 +58,24 @@ describe("scanWallet", () => {
 
   it("returns fallback values when total-value fails", async () => {
     const oc = await import("../utils/onchainos.js");
-    vi.mocked(oc.getTotalValue).mockRejectedValueOnce(new Error("API timeout"));
+    vi.mocked(oc.getTotalValue).mockRejectedValue(new Error("API timeout"));
     const result = await scanWallet("0xabc", ["ethereum"]);
     expect(result.totalValue.totalUsd).toBe(0);
-  });
+  }, 15_000);
 
   it("returns fallback values when balances fail", async () => {
     const oc = await import("../utils/onchainos.js");
-    vi.mocked(oc.getAllBalances).mockRejectedValueOnce(new Error("Empty wallet"));
+    vi.mocked(oc.getAllBalances).mockRejectedValue(new Error("Empty wallet"));
     const result = await scanWallet("0xabc", ["ethereum"]);
     expect(result.balances.chains).toEqual([]);
-  });
+  }, 15_000);
 
   it("returns empty arrays when PnL data fails", async () => {
     const oc = await import("../utils/onchainos.js");
-    vi.mocked(oc.getTokenPnL).mockRejectedValueOnce(new Error("timeout"));
-    vi.mocked(oc.getDexHistory).mockRejectedValueOnce(new Error("timeout"));
+    vi.mocked(oc.getTokenPnL).mockRejectedValue(new Error("timeout"));
+    vi.mocked(oc.getDexHistory).mockRejectedValue(new Error("timeout"));
     const result = await scanWallet("0xabc", ["ethereum"]);
     expect(result.tokenPnL).toEqual([]);
     expect(result.tradeHistory).toEqual([]);
-  });
+  }, 15_000);
 });

@@ -113,6 +113,12 @@ async function runScan(args: string[]) {
 
   // Calculate compensation
   const selfScan = false; // Could add self-address detection
+  // Dynamic strategy log
+  if (scanResult.scanMeta.strategySwitch) {
+    console.log(`🔄 [Agent] ${scanResult.scanMeta.strategySwitchReason}`);
+  }
+  console.log(`📍 主力鏈：${scanResult.scanMeta.dominantChain}（${scanResult.scanMeta.dominantChainReason}）`);
+
   const compParams: CompensationParams = {
     exAddress: address,
     totalAssetsUsd: scanResult.totalValue.totalUsd,
@@ -123,6 +129,7 @@ async function runScan(args: string[]) {
     baseRate: 0.05,
     profitShareRate: 0.10,
     emotionalMultiplier: true,
+    behavioralProfile: scanResult.behavioralProfile,
   };
 
   const compensation = calculateCompensation(compParams);
@@ -151,6 +158,7 @@ async function runScan(args: string[]) {
     compensation,
     roast,
     caseNumber: generateCaseNumber(),
+    scanMeta: scanResult.scanMeta,
   };
 
   console.log(formatScanReport(report));
@@ -221,6 +229,10 @@ async function runRefresh(args: string[]) {
   const scanResult = await scanWallet(address, chainList, "ethereum", relationshipStart, relationshipEnd);
   const scores = scoreWallet(scanResult);
 
+  if (scanResult.scanMeta.strategySwitch) {
+    console.log(`🔄 [Agent] ${scanResult.scanMeta.strategySwitchReason}`);
+  }
+
   const compParams: CompensationParams = {
     exAddress: address,
     totalAssetsUsd: scanResult.totalValue.totalUsd,
@@ -231,6 +243,7 @@ async function runRefresh(args: string[]) {
     baseRate: 0.05,
     profitShareRate: 0.10,
     emotionalMultiplier: true,
+    behavioralProfile: scanResult.behavioralProfile,
   };
 
   const compensation = calculateCompensation(compParams);
@@ -257,6 +270,7 @@ async function runRefresh(args: string[]) {
     compensation,
     roast,
     caseNumber: generateCaseNumber(),
+    scanMeta: scanResult.scanMeta,
   };
 
   console.log(formatScanReport(report));
