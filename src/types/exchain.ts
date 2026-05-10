@@ -29,6 +29,21 @@ export const INVESTMENT_TAG_LABELS: Record<InvestmentTag, string> = {
   degen: "🎰 Degen",
 };
 
+export type DataConfidence = "confirmed" | "estimated" | "unavailable";
+
+export interface BalanceDerivedMetrics {
+  memeTokenCount: number;
+  memeTokenValueUsd: number;
+  memeTokenRatio: number;           // meme value / total value
+  stablecoinRatio: number;          // stablecoin value / total value
+  bluechipRatio: number;            // bluechip value / total value
+  tokenCount: number;               // total distinct tokens held
+  diversificationScore: number;     // 0-100 based on Herfindahl inverse
+  concentrationRisk: number;        // 0-100, high if one token dominates
+  topTokenSymbol: string;
+  topTokenRatio: number;            // fraction of portfolio in top token
+}
+
 export interface BehavioralProfile {
   avgSlippageLoss: number;
   memeTradeFrequency: number;
@@ -38,6 +53,9 @@ export interface BehavioralProfile {
   chainActivity: Record<string, number>;
   dominantChain: string;
   dominantChainReason: string;
+  confidence: DataConfidence;
+  dataSource: "dex_history" | "balances" | "none";
+  balanceDerivedMetrics?: BalanceDerivedMetrics;
 }
 
 export interface WalletScores {
@@ -120,7 +138,9 @@ export interface BreakupReport {
   walletData: {
     totalAssetsUsd: number;
     winRate: number;
+    winRateConfidence: DataConfidence;
     tradeCount: number;
+    tradeCountConfidence: DataConfidence;
   };
   scores: WalletScores;
   compensation: CompensationResult;

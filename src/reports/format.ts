@@ -16,7 +16,9 @@ export function formatScanReport(report: BreakupReport): string {
   lines.push("║  │                                                     │  ║");
   lines.push(`║  │    💰 鏈上資產        📊 交易勝率      🏷️ 人設標籤   │  ║`);
   lines.push("║  │                                                     │  ║");
-  lines.push(`║  │    $${(report.walletData.totalAssetsUsd || 0).toLocaleString().padEnd(12)} ${(Math.round(report.walletData.winRate * 100) + "%").padEnd(14)} ${report.scores.investmentTags.map((t) => INVESTMENT_TAG_LABELS[t]).join(" ").padEnd(14)}│  ║`);
+  const winRateLabel = Math.round(report.walletData.winRate * 100) + "%"
+    + (report.walletData.winRateConfidence === "estimated" ? "*" : "");
+  lines.push(`║  │    $${(report.walletData.totalAssetsUsd || 0).toLocaleString().padEnd(12)} ${winRateLabel.padEnd(14)} ${report.scores.investmentTags.map((t) => INVESTMENT_TAG_LABELS[t]).join(" ").slice(0, 14).padEnd(14)}│  ║`);
   lines.push("║  │                                                     │  ║");
   lines.push("║  └─────────────────────────────────────────────────────┘  ║");
   lines.push("║                                                           ║");
@@ -42,15 +44,27 @@ export function formatScanReport(report: BreakupReport): string {
   }
   lines.push("║                                                           ║");
 
-  // Behavioral profile section
-  if (bp && (bp.degenScore > 0 || bp.rugPullCount > 0 || bp.memeTradeFrequency > 0)) {
+  // Behavioral profile — always show
+  if (bp) {
+    const confidenceTag = bp.confidence === "estimated" ? " 📊估算" : bp.confidence === "confirmed" ? " ✅確認" : " ⚠️無數據";
     lines.push("║  ┌─── 韭菜行為分析 ────────────────────────────────────┐  ║");
     lines.push("║  │                                                     │  ║");
-    lines.push(`║  │   🎰 Degen 指數:  ${String(bp.degenScore).padEnd(3)}/100                              │  ║`);
-    lines.push(`║  │   📉 平均滑點:    ${String(bp.avgSlippageLoss.toFixed(1) + "%").padEnd(6)}                              │  ║`);
+    lines.push(`║  │   🎰 Degen 指數:  ${String(bp.degenScore).padEnd(3)}/100${confidenceTag}                 │  ║`);
+    lines.push(`║  │   📉 平均滑點:    ${String(bp.avgSlippageLoss > 0 ? bp.avgSlippageLoss.toFixed(1) + "%" : "N/A").padEnd(6)}                              │  ║`);
     lines.push(`║  │   🐶 Meme 佔比:   ${String((bp.memeTradeFrequency * 100).toFixed(0) + "%").padEnd(6)}                              │  ║`);
     lines.push(`║  │   🎯 被 Rug:      ${String(bp.rugPullCount + " 次").padEnd(6)}                              │  ║`);
     lines.push(`║  │   ⚠️ 高風險交易:   ${String(bp.highRiskTradeCount + " 筆").padEnd(6)}                              │  ║`);
+
+    // Balance-derived metrics
+    if (bp.balanceDerivedMetrics) {
+      const bdm = bp.balanceDerivedMetrics;
+      lines.push("║  │                                                     │  ║");
+      lines.push("║  │   ── 基於持倉的估算 ──                              │  ║");
+      lines.push(`║  │   🪙 持有代幣數:   ${String(bdm.tokenCount + " 種").padEnd(6)}                              │  ║`);
+      lines.push(`║  │   💵 穩定幣佔比:   ${String((bdm.stablecoinRatio * 100).toFixed(0) + "%").padEnd(6)}                              │  ║`);
+      lines.push(`║  │   🏦 藍籌佔比:     ${String((bdm.bluechipRatio * 100).toFixed(0) + "%").padEnd(6)}                              │  ║`);
+      lines.push(`║  │   🎯 集中度:       ${String(bdm.concentrationRisk + "/100").padEnd(6)}                              │  ║`);
+    }
     lines.push("║  │                                                     │  ║");
     lines.push("║  └─────────────────────────────────────────────────────┘  ║");
     lines.push("║                                                           ║");
@@ -93,7 +107,6 @@ export function formatScanReport(report: BreakupReport): string {
     lines.push("║                                                           ║");
     lines.push("║  🤖 法官 AI 感言：                                        ║");
     lines.push("║  ┌─────────────────────────────────────────────────────┐  ║");
-    // Wrap long roast text
     const roastLines = wrapText(report.roast, 50);
     for (const rl of roastLines) {
       lines.push(`║  │  ${rl.padEnd(52)}│  ║`);
@@ -114,6 +127,9 @@ export function formatScanReport(report: BreakupReport): string {
   lines.push("💡 使用 'exchain summons <address>' 發送鏈上存證到對方錢包");
   lines.push("💡 使用 'exchain refresh <address>' 實時刷新對方錢包數據");
   lines.push("");
+  if (report.walletData.winRateConfidence === "estimated") {
+    lines.push("* 勝率標 * 為基於持倉估算，非 DEX 實際交易數據");
+  }
   lines.push("* 純屬娛樂，數據來自公開區塊鏈");
 
   return lines.join("\n");

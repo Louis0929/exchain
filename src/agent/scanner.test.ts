@@ -40,7 +40,9 @@ describe("scanWallet", () => {
     expect(result.tokenPnL).toHaveLength(1);
     expect(result.tradeHistory).toHaveLength(1);
     expect(result.behavioralProfile).toBeDefined();
-    expect(result.scanMeta).toBeDefined();
+    expect(result.behavioralProfile.confidence).toBe("confirmed");
+    expect(result.behavioralProfile.dataSource).toBe("dex_history");
+    expect(result.pnlConfidence).toBe("confirmed");
     expect(result.scanMeta.chainsScanned).toContain("ethereum");
   });
 
@@ -49,6 +51,7 @@ describe("scanWallet", () => {
     expect(result.behavioralProfile.degenScore).toBeGreaterThanOrEqual(0);
     expect(result.behavioralProfile.dominantChain).toBeDefined();
     expect(result.behavioralProfile.chainActivity).toBeDefined();
+    expect(result.behavioralProfile.balanceDerivedMetrics).toBeDefined();
   });
 
   it("uses default chains when not specified", async () => {
@@ -77,5 +80,59 @@ describe("scanWallet", () => {
     const result = await scanWallet("0xabc", ["ethereum"]);
     expect(result.tokenPnL).toEqual([]);
     expect(result.tradeHistory).toEqual([]);
+  }, 15_000);
+
+  it("derives behavioral profile from balances when no DEX data", async () => {
+    const oc = await import("../utils/onchainos.js");
+    vi.mocked(oc.getTokenPnL).mockResolvedValue([]);
+    vi.mocked(oc.getDexHistory).mockResolvedValue([]);
+    vi.mocked(oc.getPortfolioOverview).mockResolvedValue({
+      address: "0xabc", totalPnlUsd: 0, winRate: 0, tradeCount: 0,
+      avgHoldingTime: "0", bestTrade: { token: "", pnlUsd: 0 }, worstTrade: { token: "", pnlUsd: 0 },
+    });
+    vi.mocked(oc.getAllBalances).mockResolvedValue({
+      address: "0xabc",
+      chains: [{
+        chain: "ethereum",
+        tokens: [
+          { token: "PEPE", symbol: "PEPE", amount: 1000000, valueUsd: 5000, chain: "ethereum" },
+          { token: "DOGE", symbol: "DOGE", amount: 5000, valueUsd: 3000, chain: "ethereum" },
+          { token: "ETH", symbol: "ETH", amount: 2, valueUsd: 6000, chain: "ethereum" },
+        ],
+        totalUsd: 14_000,
+      }],
+    });
+    vi.mocked(oc.getTotalValue).mockResolvedValue({ totalUsd: 14_000, chains: { ethereum: 14_000 } });
+
+    const result = await scanWallet("0xabc", ["ethereum"]);
+    expect(result.behavioralProfile.dataSource).toBe("balances");
+    expect(result.behavioralProfile.confidence).toBe("estimated");
+    expect(result.behavioralProfile.degenScore).toBeGreaterThan(0);
+    expect(result.behavioralProfile.balanceDerivedMetrics).toBeDefined();
+    expect(result.behavioralProfile.balanceDerivedMetrics!.memeTokenRatio).toBeGreaterThan(0);
+    expect(result.pnlConfidence).toBe("estimated");
+  }, 15_000);
+
+  it("produces deterministic estimated winRate (no randomness)", async () => {
+    const oc = await import("../utils/onchainos.js");
+    vi.mocked(oc.getTokenPnL).mockResolvedValue([]);
+    vi.mocked(oc.getDexHistory).mockResolvedValue([]);
+    vi.mocked(oc.getPortfolioOverview).mockResolvedValue({
+      address: "0xabc", totalPnlUsd: 0, winRate: 0, tradeCount: 0,
+      avgHoldingTime: "0", bestTrade: { token: "", pnlUsd: 0 }, worstTrade: { token: "", pnlUsd: 0 },
+    });
+    vi.mocked(oc.getAllBalances).mockResolvedValue({
+      address: "0xabc",
+      chains: [{
+        chain: "ethereum",
+        tokens: [{ token: "ETH", symbol: "ETH", amount: 10, valueUsd: 30_000, chain: "ethereum" }],
+        totalUsd: 30_000,
+      }],
+    });
+    vi.mocked(oc.getTotalValue).mockResolvedValue({ totalUsd: 30_000, chains: { ethereum: 30_000 } });
+
+    const result1 = await scanWallet("0xabc", ["ethereum"]);
+    const result2 = await scanWallet("0xabc", ["ethereum"]);
+    expect(result1.pnlOverview.winRate).toBe(result2.pnlOverview.winRate);
   }, 15_000);
 });

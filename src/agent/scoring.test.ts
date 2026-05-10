@@ -9,6 +9,19 @@ vi.mock("../utils/onchainos.js", () => ({
   ]),
 }));
 
+const defaultBalanceDerivedMetrics = {
+  memeTokenCount: 0,
+  memeTokenValueUsd: 0,
+  memeTokenRatio: 0,
+  stablecoinRatio: 0.1,
+  bluechipRatio: 0.7,
+  tokenCount: 3,
+  diversificationScore: 50,
+  concentrationRisk: 50,
+  topTokenSymbol: "ETH",
+  topTokenRatio: 0.7,
+};
+
 const defaultBehavioralProfile = {
   avgSlippageLoss: 5,
   memeTradeFrequency: 0.1,
@@ -18,6 +31,9 @@ const defaultBehavioralProfile = {
   chainActivity: { ethereum: 45_230 },
   dominantChain: "ethereum",
   dominantChainReason: "Highest activity",
+  confidence: "confirmed" as const,
+  dataSource: "dex_history" as const,
+  balanceDerivedMetrics: defaultBalanceDerivedMetrics,
 };
 
 function makeScanResult(overrides: Partial<ScanResult> = {}): ScanResult {
@@ -38,6 +54,7 @@ function makeScanResult(overrides: Partial<ScanResult> = {}): ScanResult {
     tokenPnL: [],
     tradeHistory: [],
     behavioralProfile: defaultBehavioralProfile,
+    pnlConfidence: "confirmed",
     scanMeta: {
       chainsScanned: ["ethereum"],
       dominantChain: "ethereum",
@@ -109,6 +126,14 @@ describe("getRiskLevel", () => {
     expect(getRiskLevel(0.5, 10, 70)).toBe("degen");
   });
 
+  it("returns moderate for estimated data with moderate winRate", () => {
+    expect(getRiskLevel(0.5, 10, 20, "estimated")).toBe("moderate");
+  });
+
+  it("returns degen for estimated data with very high degenScore", () => {
+    expect(getRiskLevel(0.5, 10, 80, "estimated")).toBe("degen");
+  });
+
   it("returns conservative for high winRate", () => {
     expect(getRiskLevel(0.7, 50)).toBe("conservative");
   });
@@ -162,6 +187,24 @@ describe("classifyInvestmentStyle", () => {
     expect(result).toContain("rug_pull_victim");
   });
 
+  it("tags degen from balance-derived data", () => {
+    const result = classifyInvestmentStyle(makeScanResult({
+      behavioralProfile: {
+        ...defaultBehavioralProfile,
+        degenScore: 65,
+        dataSource: "balances",
+        confidence: "estimated",
+        balanceDerivedMetrics: {
+          ...defaultBalanceDerivedMetrics,
+          memeTokenRatio: 0.4,
+          memeTokenCount: 3,
+          bluechipRatio: 0.1,
+        },
+      },
+    }));
+    expect(result).toContain("degen");
+  });
+
   it("defaults to trend_trader when no specific tags apply", () => {
     const result = classifyInvestmentStyle(makeScanResult({
       totalValue: { totalUsd: 10_000, chains: {} },
@@ -187,6 +230,7 @@ describe("scoreWallet", () => {
     const result = scoreWallet(makeScanResult());
     expect(result.behavioralProfile).toBeDefined();
     expect(result.behavioralProfile.degenScore).toBe(10);
+    expect(result.behavioralProfile.confidence).toBe("confirmed");
   });
 });
 

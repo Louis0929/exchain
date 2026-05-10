@@ -209,7 +209,47 @@ export async function getAllBalances(address: string, chains: string[]): Promise
     }
   }
 
-  return runCli<PortfolioBalances>(["portfolio", "all-balances", "--address", address, "--chains", chainIndexes]);
+  const raw = await runCli<any>(["portfolio", "all-balances", "--address", address, "--chains", chainIndexes]);
+
+  // CLI returns {ok, data: [{tokenAssets: [{symbol, balance, tokenPrice, chainIndex, ...}]}]}
+  // Normalize to PortfolioBalances format
+  const rawData = raw.data || raw;
+  const rawChains = Array.isArray(rawData) ? rawData : (rawData.chains || []);
+
+  const mappedChains = rawChains.map((c: any) => {
+    const tokenAssets = c.tokenAssets || c.tokens || [];
+    const mappedTokens = tokenAssets.map((t: any) => ({
+      token: t.tokenContractAddress || t.token || t.symbol,
+      symbol: t.symbol || "",
+      amount: parseFloat(t.balance || t.amount || "0"),
+      valueUsd: parseFloat(t.balance || t.amount || "0") * parseFloat(t.tokenPrice || t.valueUsd || "0"),
+      chain: c.chain || chainIndexToName(t.chainIndex || c.chainIndex),
+    }));
+
+    return {
+      chain: c.chain || chainIndexToName(rawChains.length > 0 ? rawChains[0].chainIndex : "1"),
+      tokens: mappedTokens,
+      totalUsd: mappedTokens.reduce((s: number, t: any) => s + t.valueUsd, 0),
+    };
+  });
+
+  return { address, chains: mappedChains };
+}
+
+const CHAIN_INDEX_MAP: Record<string, string> = {
+  "1": "ethereum",
+  "8453": "base",
+  "56": "bsc",
+  "42161": "arbitrum",
+  "137": "polygon",
+  "10": "optimism",
+  "43114": "avalanche",
+  "0": "bitcoin",
+  "501": "solana",
+};
+
+function chainIndexToName(index: string): string {
+  return CHAIN_INDEX_MAP[index] || index;
 }
 
 // --- Market / PnL (AUTHENTICATED endpoints - need OKX account) ---
@@ -274,7 +314,8 @@ export async function getDexHistory(address: string, chain: string, beginMs?: nu
     if (IS_AUTHENTICATED) {
       return httpGet<DexTrade[]>("/api/v6/dex/market/portfolio/dex-history", { address, chainIndex, begin: String(beginMs), end: String(endMs) });
     }
-    return runCli<DexTrade[]>(["market", "portfolio-dex-history", "--address", address, "--chain", chainIndex, "--begin", String(beginMs), "--end", String(endMs)]);
+    const result = await runCli<any>(["market", "portfolio-dex-history", "--address", address, "--chain", chainIndex, "--begin", String(beginMs), "--end", String(endMs)]);
+    return Array.isArray(result) ? result : (Array.isArray(result?.data) ? result.data : []);
   } catch {
     return [];
   }

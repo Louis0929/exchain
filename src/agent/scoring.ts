@@ -1,4 +1,4 @@
-import type { WalletScores, InvestmentTag, EarningScore, BehavioralProfile } from "../types/exchain.js";
+import type { WalletScores, InvestmentTag, EarningScore, BehavioralProfile, DataConfidence } from "../types/exchain.js";
 import type { ScanResult } from "./scanner.js";
 import { getSmartMoneyLeaderboard } from "../utils/onchainos.js";
 
@@ -31,7 +31,7 @@ export function calculateEarningIndex(totalAssetsUsd: number): EarningScore {
 
 export function classifyInvestmentStyle(scanResult: ScanResult): InvestmentTag[] {
   const tags: InvestmentTag[] = [];
-  const { tokenPnL, pnlOverview, balances, behavioralProfile } = scanResult;
+  const { pnlOverview, balances, behavioralProfile } = scanResult;
 
   const allTokens = (balances?.chains || []).flatMap((c) => c?.tokens || []);
   const memeTokens = allTokens.filter((t) =>
@@ -46,23 +46,40 @@ export function classifyInvestmentStyle(scanResult: ScanResult): InvestmentTag[]
   );
   const totalValue = scanResult.totalValue.totalUsd || 1;
 
-  // Behavioral profile tags
+  // Behavioral profile tags (from DEX data)
   if (behavioralProfile.rugPullCount > 0) {
     tags.push("rug_pull_victim");
   }
 
-  if (behavioralProfile.degenScore >= 60) {
+  if (behavioralProfile.dataSource === "dex_history" && behavioralProfile.degenScore >= 60) {
     tags.push("degen");
   }
 
+  // Balance-derived behavioral tags
+  if (behavioralProfile.dataSource === "balances" && behavioralProfile.balanceDerivedMetrics) {
+    const bdm = behavioralProfile.balanceDerivedMetrics;
+
+    if (behavioralProfile.degenScore >= 60) {
+      tags.push("degen");
+    }
+
+    if ((bdm.memeTokenRatio > 0.3 || bdm.memeTokenCount >= 3) && !tags.includes("meme_player")) {
+      tags.push("meme_player");
+    }
+
+    if (bdm.concentrationRisk > 80 && bdm.bluechipRatio < 0.3 && !tags.includes("meme_player") && !tags.includes("trend_trader")) {
+      tags.push("trend_trader");
+    }
+  }
+
   if (memeTokens.length >= 3 || (memeTokens.reduce((s, t) => s + t.valueUsd, 0) / totalValue) > 0.3) {
-    tags.push("meme_player");
+    if (!tags.includes("meme_player")) tags.push("meme_player");
   }
   if (defiTokens.length >= 2) {
     tags.push("defi_farmer");
   }
   if (stablePct / totalValue > 0.7) {
-    tags.push("paper_hands");
+    if (!tags.includes("paper_hands")) tags.push("paper_hands");
   }
 
   // PnL-based tags
@@ -70,7 +87,7 @@ export function classifyInvestmentStyle(scanResult: ScanResult): InvestmentTag[]
     tags.push("diamond_hands");
   }
   if (pnlOverview.winRate < 0.35 && pnlOverview.tradeCount >= 5) {
-    tags.push("paper_hands");
+    if (!tags.includes("paper_hands")) tags.push("paper_hands");
   }
 
   // Whale/shrimp based on total
@@ -115,8 +132,14 @@ export function getActivityLevel(tradeCount: number): "gym_rat" | "chill" {
   return tradeCount >= 50 ? "gym_rat" : "chill";
 }
 
-export function getRiskLevel(winRate: number, totalTrades: number, degenScore?: number): WalletScores["riskLevel"] {
+export function getRiskLevel(winRate: number, totalTrades: number, degenScore?: number, confidence?: DataConfidence): WalletScores["riskLevel"] {
   if (degenScore !== undefined && degenScore >= 70) return "degen";
+  if (confidence === "estimated") {
+    if (degenScore !== undefined && degenScore >= 80) return "degen";
+    if (winRate < 0.3) return "aggressive";
+    if (winRate < 0.45) return "moderate";
+    return "moderate";
+  }
   if (winRate < 0.3 && totalTrades > 20) return "degen";
   if (winRate < 0.4) return "aggressive";
   if (winRate < 0.6) return "moderate";
@@ -131,7 +154,8 @@ export function scoreWallet(scanResult: ScanResult): WalletScores {
   const riskLevel = getRiskLevel(
     scanResult.pnlOverview.winRate,
     scanResult.pnlOverview.tradeCount,
-    scanResult.behavioralProfile.degenScore
+    scanResult.behavioralProfile.degenScore,
+    scanResult.pnlConfidence
   );
 
   return {

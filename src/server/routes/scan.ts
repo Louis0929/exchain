@@ -44,6 +44,7 @@ scanRouter.post("/scan", async (req, res, next) => {
       compensation,
       totalAssetsUsd: scanResult.totalValue.totalUsd,
       winRate: scanResult.pnlOverview.winRate,
+      winRateConfidence: scanResult.pnlConfidence,
       exAddress: address,
       selfScan: false,
     });
@@ -55,7 +56,9 @@ scanRouter.post("/scan", async (req, res, next) => {
       walletData: {
         totalAssetsUsd: scanResult.totalValue.totalUsd,
         winRate: scanResult.pnlOverview.winRate,
+        winRateConfidence: scanResult.pnlConfidence,
         tradeCount: scanResult.pnlOverview.tradeCount,
+        tradeCountConfidence: scanResult.pnlConfidence,
       },
       scores,
       compensation,

@@ -2,6 +2,19 @@ import { describe, it, expect } from "vitest";
 import { calculateCompensation } from "./calculator.js";
 import type { CompensationParams, BehavioralProfile } from "../types/exchain.js";
 
+const defaultBalanceDerivedMetrics = {
+  memeTokenCount: 0,
+  memeTokenValueUsd: 0,
+  memeTokenRatio: 0,
+  stablecoinRatio: 0.1,
+  bluechipRatio: 0.7,
+  tokenCount: 3,
+  diversificationScore: 50,
+  concentrationRisk: 50,
+  topTokenSymbol: "ETH",
+  topTokenRatio: 0.7,
+};
+
 const defaultBehavioralProfile: BehavioralProfile = {
   avgSlippageLoss: 5,
   memeTradeFrequency: 0.1,
@@ -11,6 +24,9 @@ const defaultBehavioralProfile: BehavioralProfile = {
   chainActivity: { ethereum: 45_230 },
   dominantChain: "ethereum",
   dominantChainReason: "Default",
+  confidence: "confirmed",
+  dataSource: "dex_history",
+  balanceDerivedMetrics: defaultBalanceDerivedMetrics,
 };
 
 describe("calculateCompensation", () => {
@@ -82,6 +98,33 @@ describe("calculateCompensation", () => {
     expect(result.degenMultiplier).toBeGreaterThan(1.0);
     expect(result.degenPenalty).toBeGreaterThan(0);
     expect(result.total).toBeGreaterThan(4151.5);
+  });
+
+  it("applies balance-derived degen penalty", () => {
+    const balanceProfile: BehavioralProfile = {
+      ...defaultBehavioralProfile,
+      degenScore: 50,
+      memeTradeFrequency: 0.4,
+      rugPullCount: 0,
+      highRiskTradeCount: 0,
+      avgSlippageLoss: 0,
+      confidence: "estimated",
+      dataSource: "balances",
+      balanceDerivedMetrics: {
+        ...defaultBalanceDerivedMetrics,
+        memeTokenRatio: 0.4,
+        memeTokenCount: 5,
+        stablecoinRatio: 0.02,
+        bluechipRatio: 0.1,
+        concentrationRisk: 80,
+      },
+    };
+    const result = calculateCompensation({ ...baseParams, behavioralProfile: balanceProfile });
+    expect(result.degenMultiplier).toBeGreaterThan(1.0);
+    expect(result.degenPenalty).toBeGreaterThan(0);
+    const degenItem = result.breakdown.find(b => b.label === "韭菜行為加罰");
+    expect(degenItem).toBeDefined();
+    expect(degenItem!.detail).toContain("持倉估算");
   });
 
   it("no degen penalty for conservative behavioral profile", () => {

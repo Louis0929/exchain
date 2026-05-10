@@ -140,6 +140,7 @@ async function runScan(args: string[]) {
     compensation,
     totalAssetsUsd: scanResult.totalValue.totalUsd,
     winRate: scanResult.pnlOverview.winRate,
+    winRateConfidence: scanResult.pnlConfidence,
     exAddress: address,
     selfScan,
   });
@@ -152,7 +153,9 @@ async function runScan(args: string[]) {
     walletData: {
       totalAssetsUsd: scanResult.totalValue.totalUsd,
       winRate: scanResult.pnlOverview.winRate,
+      winRateConfidence: scanResult.pnlConfidence,
       tradeCount: scanResult.pnlOverview.tradeCount,
+      tradeCountConfidence: scanResult.pnlConfidence,
     },
     scores,
     compensation,
@@ -253,6 +256,7 @@ async function runRefresh(args: string[]) {
     compensation,
     totalAssetsUsd: scanResult.totalValue.totalUsd,
     winRate: scanResult.pnlOverview.winRate,
+    winRateConfidence: scanResult.pnlConfidence,
     exAddress: address,
     selfScan: false,
   });
@@ -264,7 +268,9 @@ async function runRefresh(args: string[]) {
     walletData: {
       totalAssetsUsd: scanResult.totalValue.totalUsd,
       winRate: scanResult.pnlOverview.winRate,
+      winRateConfidence: scanResult.pnlConfidence,
       tradeCount: scanResult.pnlOverview.tradeCount,
+      tradeCountConfidence: scanResult.pnlConfidence,
     },
     scores,
     compensation,
